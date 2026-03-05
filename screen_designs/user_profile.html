@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Leave Requests Management Overview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7c5fb4",
+                        "background-light": "#f7f6f7",
+                        "background-dark": "#18151d",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Odoo Portal</h2>
+</div>
+<nav class="flex items-center gap-8">
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary py-1" href="#">Leave Requests</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Attendance</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Expenses</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<label class="flex flex-col min-w-40 h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full bg-slate-100 dark:bg-slate-800">
+<div class="text-slate-500 flex items-center justify-center pl-4">
+<span class="material-symbols-outlined text-lg">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-transparent focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-500 text-sm" placeholder="Search requests..." value=""/>
+</div>
+</label>
+<button class="flex min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-all">
+<span>New Request</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-slate-200 dark:border-slate-700" data-alt="Professional user profile avatar photo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDnGzCKk0jbB0T2t5VQ3TSk86dfFjOIynRkjJIv7fdQRMthytyJ_odrwzy575zb5ctmmEuETzvUdf0MIMNv1ya2EDgdAIySQZfNnV-vMx1GEOva6Wk9-X6J8R2uoRTDH8LKd_2HrwhC63VhW6RKpg_mXEYU4lTdnMnTktx7u8ghmOTmCBtlrEVrcEZP7vz3ZbBmPc66VuDGd8A2AJgD2VECPQnVd2C1S00lXR6wh2QdhfOX_2DlGfvIYzW8Bi03Evmhhd5qocmACfs");'></div>
+</div>
+</header>
+<main class="flex-1 flex flex-col max-w-7xl mx-auto w-full px-10 py-8 gap-8">
+<!-- Breadcrumbs & Title -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-slate-500 text-sm font-medium">
+<a class="hover:text-primary" href="#">Home</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-slate-900 dark:text-slate-200">Leave Management</span>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<h1 class="text-slate-900 dark:text-white text-4xl font-black tracking-tight">Leave Management</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Manage and track your time off requests and balances.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                                Filter
+                            </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+                                2024
+                                <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Balance Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex flex-col gap-4 rounded-xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">beach_access</span>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider">Paid Time Off</p>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-white text-4xl font-bold tracking-tight">15</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm">days remaining</p>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full w-[60%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-4 rounded-xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600">
+<span class="material-symbols-outlined">medical_services</span>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider">Sick Leave</p>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-white text-4xl font-bold tracking-tight">5</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm">days available</p>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+<div class="bg-emerald-500 h-2 rounded-full w-[25%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-4 rounded-xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600">
+<span class="material-symbols-outlined">block</span>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider">Unpaid Leave</p>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-white text-4xl font-bold tracking-tight">2</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm">days used</p>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+<div class="bg-slate-400 h-2 rounded-full w-[10%]"></div>
+</div>
+</div>
+</div>
+<!-- Requests Table Section -->
+<div class="flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+<div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+<div class="flex gap-6">
+<a class="relative text-primary text-sm font-bold pb-4 -mb-[17px] border-b-2 border-primary" href="#">All Requests</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-bold hover:text-primary transition-colors" href="#">Approved</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-bold hover:text-primary transition-colors" href="#">Pending</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-bold hover:text-primary transition-colors" href="#">Draft</a>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50">
+<th class="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Type</th>
+<th class="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Description</th>
+<th class="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Dates</th>
+<th class="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Duration</th>
+<th class="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider text-center">Status</th>
+<th class="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-primary"></div>
+<span class="font-medium">Paid Time Off</span>
+</div>
+</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">Summer Vacation</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm font-semibold">Aug 12 - Aug 16</span>
+<span class="text-xs text-slate-400">2024</span>
+</div>
+</td>
+<td class="px-6 py-5 font-medium">5 Days</td>
+<td class="px-6 py-5 text-center">
+<span class="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                                            Approved
+                                        </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-emerald-500"></div>
+<span class="font-medium">Sick Leave</span>
+</div>
+</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">Doctor's Appointment</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm font-semibold">Sep 05</span>
+<span class="text-xs text-slate-400">2024</span>
+</div>
+</td>
+<td class="px-6 py-5 font-medium">1 Day</td>
+<td class="px-6 py-5 text-center">
+<span class="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-3 py-1 text-xs font-bold text-amber-700 dark:text-amber-400">
+                                            Pending
+                                        </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-primary"></div>
+<span class="font-medium">Paid Time Off</span>
+</div>
+</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">Personal Errands</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm font-semibold">Oct 20 - Oct 21</span>
+<span class="text-xs text-slate-400">2024</span>
+</div>
+</td>
+<td class="px-6 py-5 font-medium">2 Days</td>
+<td class="px-6 py-5 text-center">
+<span class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-bold text-slate-600 dark:text-slate-400">
+                                            Draft
+                                        </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-primary"></div>
+<span class="font-medium">Paid Time Off</span>
+</div>
+</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">Family Event</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm font-semibold">Jul 15 - Jul 19</span>
+<span class="text-xs text-slate-400">2024</span>
+</div>
+</td>
+<td class="px-6 py-5 font-medium">5 Days</td>
+<td class="px-6 py-5 text-center">
+<span class="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                                            Approved
+                                        </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+<p class="text-xs text-slate-500 font-medium">Showing 4 of 24 requests</p>
+<div class="flex gap-2">
+<button class="size-8 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded border border-primary bg-primary text-white text-xs font-bold">1</button>
+<button class="size-8 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-xs font-bold">2</button>
+<button class="size-8 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-xs font-bold">3</button>
+<button class="size-8 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto px-10 py-6 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-slate-400 text-xs font-medium">
+<p>© 2024 Odoo S.A. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary" href="#">Help Center</a>
+<a class="hover:text-primary" href="#">Privacy Policy</a>
+<a class="hover:text-primary" href="#">Terms of Service</a>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

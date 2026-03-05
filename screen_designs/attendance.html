@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Odoo Portal Home Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3713ec",
+                        "sidebar-bg": "#f9fafb",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply text-slate-900 antialiased overflow-x-hidden bg-white;
+            }
+        }
+    </style>
+</head>
+<body class="font-display">
+<div class="flex h-screen w-full">
+<aside class="w-64 flex flex-col h-full bg-[#f9fafb] border-r border-slate-200 shrink-0">
+<div class="flex flex-col h-full p-4 justify-between">
+<div class="flex flex-col gap-8">
+<div class="flex items-center gap-3 px-2">
+<div class="bg-primary flex items-center justify-center rounded-lg size-10">
+<span class="material-symbols-outlined text-white" style="font-size: 24px;">rocket_launch</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 text-base font-bold leading-none">Odoo Portal</h1>
+<p class="text-slate-500 text-xs mt-1">Enterprise Edition</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/10" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">dashboard</span>
+<span class="text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400" style="font-size: 20px;">timer</span>
+<span class="text-sm font-medium">Attendance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400" style="font-size: 20px;">shopping_bag</span>
+<span class="text-sm font-medium">Sales</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400" style="font-size: 20px;">event_busy</span>
+<span class="text-sm font-medium">Leaves</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400" style="font-size: 20px;">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+</div>
+<div class="flex flex-col gap-4">
+<button class="flex w-full items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold shadow-md shadow-primary/20">
+<span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+<span>New Request</span>
+</button>
+<div class="flex items-center gap-3 p-2 border-t border-slate-200 pt-4">
+<div class="size-8 rounded-full bg-slate-200 overflow-hidden" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAXH-y7lGZRBGZPDYqy3u-rq4RS-vkKwNywcReJLQfODTweMnOYhJPyEgfpscqDDbiquW_22H6BkJuJ4jmjQ48pHfZK0J3MR8qO-MBOM8BimpjTklN5JK1Ucm8Mw3XUUnofIejC0TluRCuZ99gTPwI0gsh5v9A8T_jIRSg5hago4rykKHrriX6JCG43zmPBcqVF2aRDCZNjqyBDUxF3OiiCU4TkoYkpcFyjudbne0OFEeogEzIKGEE5CgIjoUsiLVTWzFJHdDNWzhY'); background-size: cover; background-position: center;"></div>
+<div class="flex flex-col min-w-0">
+<span class="text-slate-900 text-xs font-semibold truncate">Alex Johnson</span>
+<span class="text-slate-500 text-[10px] truncate">Admin Account</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-white">
+<header class="flex h-16 shrink-0 items-center justify-between px-8 border-b border-slate-200 bg-white">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+<div class="size-2 rounded-full bg-emerald-500"></div>
+<span class="text-emerald-700 text-xs font-bold uppercase tracking-wider leading-none">Odoo v17 - Production DB</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative max-w-sm hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style="font-size: 18px;">search</span>
+<input class="w-64 bg-slate-100 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary transition-all placeholder:text-slate-400" placeholder="Search resources..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-6 w-px bg-slate-200"></div>
+<span class="text-sm font-medium text-slate-500">Oct 24, 2023</span>
+</div>
+</div>
+</header>
+<div class="p-8 max-w-7xl mx-auto w-full">
+<div class="mb-8">
+<h2 class="text-3xl font-black tracking-tight text-slate-900">Welcome back, Alex</h2>
+<p class="text-slate-500 mt-1">Your organization overview for today. You have <span class="text-primary font-semibold">3 items</span> requiring attention.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+<div class="bg-white p-4 rounded-xl border border-slate-200">
+<p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Hours Today</p>
+<p class="text-2xl font-bold mt-1 text-slate-900">06:42</p>
+</div>
+<div class="bg-white p-4 rounded-xl border border-slate-200">
+<p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monthly Sales</p>
+<p class="text-2xl font-bold mt-1 text-slate-900">$128.4k</p>
+</div>
+<div class="bg-white p-4 rounded-xl border border-slate-200">
+<p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Pending Tasks</p>
+<p class="text-2xl font-bold mt-1 text-primary">12</p>
+</div>
+<div class="bg-white p-4 rounded-xl border border-slate-200">
+<p class="text-xs font-medium text-slate-500 uppercase tracking-wider">System Status</p>
+<p class="text-2xl font-bold mt-1 text-emerald-600">Stable</p>
+</div>
+</div>
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold text-slate-900">Your Modules</h3>
+<button class="text-primary text-sm font-semibold hover:underline">Customize Dashboard</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="group relative bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+<span class="material-symbols-outlined text-8xl">timer</span>
+</div>
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+<span class="material-symbols-outlined" style="font-size: 28px;">timer</span>
+</div>
+<h4 class="text-lg font-bold mb-1 text-slate-900">Attendance</h4>
+<div class="space-y-1">
+<p class="text-sm text-slate-500">Checked in at <span class="text-slate-900 font-medium">9:00 AM</span></p>
+<p class="text-xs text-slate-400">Shift: 9:00 - 17:00</p>
+</div>
+<div class="mt-6 flex items-center text-xs font-bold text-primary tracking-wide uppercase group-hover:gap-2 transition-all">
+<span>Open Module</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</div>
+<div class="group relative bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+<span class="material-symbols-outlined text-8xl">shopping_cart</span>
+</div>
+<div class="size-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 mb-4">
+<span class="material-symbols-outlined" style="font-size: 28px;">shopping_cart</span>
+</div>
+<h4 class="text-lg font-bold mb-1 text-slate-900">Sales Orders</h4>
+<div class="space-y-1">
+<p class="text-sm text-slate-500"><span class="text-slate-900 font-medium">12 Active Orders</span></p>
+<p class="text-xs text-slate-400">Total pipeline: $45.2k</p>
+</div>
+<div class="mt-6 flex items-center text-xs font-bold text-amber-600 tracking-wide uppercase group-hover:gap-2 transition-all">
+<span>Manage Sales</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</div>
+<div class="group relative bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+<span class="material-symbols-outlined text-8xl">inventory_2</span>
+</div>
+<div class="size-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 mb-4">
+<span class="material-symbols-outlined" style="font-size: 28px;">inventory_2</span>
+</div>
+<h4 class="text-lg font-bold mb-1 text-slate-900">Inventory</h4>
+<div class="space-y-1">
+<p class="text-sm text-slate-500"><span class="text-red-500 font-medium">5 Items Low Stock</span></p>
+<p class="text-xs text-slate-400">Location: Warehouse A</p>
+</div>
+<div class="mt-6 flex items-center text-xs font-bold text-indigo-600 tracking-wide uppercase group-hover:gap-2 transition-all">
+<span>Check Stock</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</div>
+<div class="group relative bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+<span class="material-symbols-outlined text-8xl">history_edu</span>
+</div>
+<div class="size-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-4">
+<span class="material-symbols-outlined" style="font-size: 28px;">history_edu</span>
+</div>
+<h4 class="text-lg font-bold mb-1 text-slate-900">Timesheets</h4>
+<div class="space-y-1">
+<p class="text-sm text-slate-500"><span class="text-slate-900 font-medium">3 Pending Approvals</span></p>
+<p class="text-xs text-slate-400">Current Week: 42</p>
+</div>
+<div class="mt-6 flex items-center text-xs font-bold text-emerald-600 tracking-wide uppercase group-hover:gap-2 transition-all">
+<span>Approve Now</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</div>
+</div>
+<div class="mt-12">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold text-slate-900">Recent Activity</h3>
+<button class="bg-slate-100 hover:bg-slate-200 transition-colors px-4 py-1.5 rounded-lg text-sm font-medium text-slate-700">View Logs</button>
+</div>
+<div class="overflow-x-auto bg-white rounded-2xl border border-slate-200">
+<table class="w-full text-left">
+<thead>
+<tr class="border-b border-slate-200 bg-slate-50/50">
+<th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Module</th>
+<th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Description</th>
+<th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">User</th>
+<th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Time</th>
+<th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-primary"></div>
+<span class="text-sm font-medium text-slate-900">Sales</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 font-medium">Confirmed Order #SO-4821-X</td>
+<td class="px-6 py-4 text-sm text-slate-600">Alex J.</td>
+<td class="px-6 py-4 text-sm text-slate-500">10:45 AM</td>
+<td class="px-6 py-4 text-right">
+<span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-tighter">Success</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-emerald-500"></div>
+<span class="text-sm font-medium text-slate-900">Inventory</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 font-medium">Internal Transfer: WH/Stock/001</td>
+<td class="px-6 py-4 text-sm text-slate-600">System</td>
+<td class="px-6 py-4 text-sm text-slate-500">09:12 AM</td>
+<td class="px-6 py-4 text-right">
+<span class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-tighter">Processed</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-amber-500"></div>
+<span class="text-sm font-medium text-slate-900">Attendance</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 font-medium">Daily Check-in Registration</td>
+<td class="px-6 py-4 text-sm text-slate-600">Alex J.</td>
+<td class="px-6 py-4 text-sm text-slate-500">09:00 AM</td>
+<td class="px-6 py-4 text-right">
+<span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-tighter">In-Time</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build and Expo outputs
+dist/
+build/
+.turbo/
+.expo/
+web-build/
+*.tsbuildinfo
+
+# React Native / Metro / Bundlers
+.metro-health-check*
+.bWatchman*
+*.bundle
+*.jsbundle
+*.meta
+*.map
+
+# iOS
+ios/build/
+ios/Pods/
+ios/.symlinks/
+*.xcworkspace/xcuserdata
+*.xcuserdatad
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.keystore
+*.jks
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.*.development
+.env.*.test
+.env.*.production
+
+# IDE and Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.log
+
+# Testing
+coverage/
+.jest/
+
+# Other tools
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

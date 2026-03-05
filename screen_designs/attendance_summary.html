@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Attendance Health &amp; Daily Log</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#6826ed",
+                "background-light": "#f6f6f8",
+                "background-dark": "#161022",
+                "neutral-slate": "#64748b",
+                "success": "#10b981",
+                "warning": "#f59e0b",
+                "danger": "#ef4444",
+              },
+              fontFamily: {
+                "display": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen w-full flex-col">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-6 md:px-10 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">blur_on</span>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Odoo Portal</h2>
+</div>
+<label class="hidden lg:flex flex-col min-w-40 h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full bg-slate-100 dark:bg-slate-800/50">
+<div class="text-slate-500 flex items-center justify-center pl-4">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-transparent focus:outline-0 focus:ring-0 placeholder:text-slate-500 px-4 pl-2 text-sm font-normal" placeholder="Search resources..." value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-semibold border-b-2 border-primary py-1" href="#">Attendance</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Payroll</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Leaves</a>
+</nav>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-xl">settings</span>
+</button>
+</div>
+<div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="text-primary font-bold text-xs">JD</span>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-[1440px] mx-auto w-full p-6 md:p-8 flex flex-col gap-8">
+<!-- Breadcrumbs & Header -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-sm text-slate-500 font-medium">
+<span>Portal</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-primary">My Attendance</span>
+</div>
+<div class="flex flex-wrap justify-between items-end gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Attendance Daily Log &amp; Summary</h1>
+<p class="text-slate-500">Real-time tracking and monthly health trends for your work shifts.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-primary/10 text-primary px-4 py-2 rounded-lg font-semibold text-sm hover:bg-primary/20 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">download</span>
+                        Export Log
+                    </button>
+<button class="bg-primary text-white px-6 py-2 rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-lg shadow-primary/25">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                        Clock In
+                    </button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Sidebar: Mini Calendars -->
+<aside class="lg:col-span-3 flex flex-col gap-6 order-2 lg:order-1">
+<div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">calendar_month</span>
+                        Calendar View
+                    </h3>
+<!-- Calendar Grid (Simplified Month Representation) -->
+<div class="space-y-6">
+<!-- Current Month -->
+<div class="flex flex-col">
+<div class="flex justify-between items-center mb-2 px-1">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-400">June 2024</span>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center">
+<span class="text-[10px] font-bold text-slate-400">S</span>
+<span class="text-[10px] font-bold text-slate-400">M</span>
+<span class="text-[10px] font-bold text-slate-400">T</span>
+<span class="text-[10px] font-bold text-slate-400">W</span>
+<span class="text-[10px] font-bold text-slate-400">T</span>
+<span class="text-[10px] font-bold text-slate-400">F</span>
+<span class="text-[10px] font-bold text-slate-400">S</span>
+<!-- Calendar Days -->
+<div class="p-1 text-xs text-slate-300">26</div>
+<div class="p-1 text-xs text-slate-300">27</div>
+<div class="p-1 text-xs text-slate-300">28</div>
+<div class="p-1 text-xs text-slate-300">29</div>
+<div class="p-1 text-xs text-slate-300">30</div>
+<div class="p-1 text-xs text-slate-300">31</div>
+<div class="p-1 text-xs font-medium text-slate-700 dark:text-slate-300 rounded hover:bg-slate-100 cursor-pointer">1</div>
+<div class="p-1 text-xs font-medium text-slate-700 dark:text-slate-300 rounded hover:bg-slate-100 cursor-pointer">2</div>
+<div class="p-1 text-xs font-medium text-slate-700 dark:text-slate-300 rounded hover:bg-slate-100 cursor-pointer">3</div>
+<div class="p-1 text-xs font-medium bg-primary/10 text-primary border border-primary/30 rounded-lg cursor-pointer">4</div>
+<div class="p-1 text-xs font-medium text-slate-700 dark:text-slate-300 rounded hover:bg-slate-100 cursor-pointer">5</div>
+<div class="p-1 text-xs font-medium text-slate-700 dark:text-slate-300 rounded hover:bg-slate-100 cursor-pointer">6</div>
+<div class="p-1 text-xs font-medium text-slate-700 dark:text-slate-300 rounded hover:bg-slate-100 cursor-pointer">7</div>
+<div class="p-1 text-xs font-medium text-slate-700 dark:text-slate-300 rounded hover:bg-slate-100 cursor-pointer">8</div>
+</div>
+</div>
+<!-- Previous Month (Small) -->
+<div class="flex flex-col opacity-50">
+<div class="flex justify-between items-center mb-2 px-1">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-400">May 2024</span>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center">
+<span class="text-[10px] font-bold text-slate-400">S</span>
+<span class="text-[10px] font-bold text-slate-400">M</span>
+<span class="text-[10px] font-bold text-slate-400">T</span>
+<span class="text-[10px] font-bold text-slate-400">W</span>
+<span class="text-[10px] font-bold text-slate-400">T</span>
+<span class="text-[10px] font-bold text-slate-400">F</span>
+<span class="text-[10px] font-bold text-slate-400">S</span>
+<div class="p-1 text-[10px] text-slate-700">28</div>
+<div class="p-1 text-[10px] text-slate-700">29</div>
+<div class="p-1 text-[10px] text-slate-700">30</div>
+<div class="p-1 text-[10px] text-slate-700">1</div>
+<div class="p-1 text-[10px] text-slate-700">2</div>
+<div class="p-1 text-[10px] text-slate-700">3</div>
+<div class="p-1 text-[10px] text-slate-700">4</div>
+</div>
+</div>
+<!-- Next Month (Small) -->
+<div class="flex flex-col opacity-50">
+<div class="flex justify-between items-center mb-2 px-1">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-400">July 2024</span>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center">
+<span class="text-[10px] font-bold text-slate-400">S</span>
+<span class="text-[10px] font-bold text-slate-400">M</span>
+<span class="text-[10px] font-bold text-slate-400">T</span>
+<span class="text-[10px] font-bold text-slate-400">W</span>
+<span class="text-[10px] font-bold text-slate-400">T</span>
+<span class="text-[10px] font-bold text-slate-400">F</span>
+<span class="text-[10px] font-bold text-slate-400">S</span>
+<div class="p-1 text-[10px] text-slate-700">30</div>
+<div class="p-1 text-[10px] text-slate-700">1</div>
+<div class="p-1 text-[10px] text-slate-700">2</div>
+<div class="p-1 text-[10px] text-slate-700">3</div>
+<div class="p-1 text-[10px] text-slate-700">4</div>
+<div class="p-1 text-[10px] text-slate-700">5</div>
+<div class="p-1 text-[10px] text-slate-700">6</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-primary/10 rounded-xl p-5 border border-primary/20">
+<h4 class="text-sm font-bold text-primary mb-2">Need a leave?</h4>
+<p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">Request time off or manage your vacation schedule directly from here.</p>
+<button class="w-full bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-primary/90 transition-all">Go to Leaves</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="lg:col-span-9 flex flex-col gap-6 order-1 lg:order-2">
+<!-- Monthly Health Summary Card -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Monthly Attendance Health</h2>
+<p class="text-sm text-slate-500">Overview of your punctuality and engagement.</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-3xl font-black text-primary tracking-tight">94%</span>
+<div class="flex items-center gap-1 text-success text-xs font-bold bg-success/10 px-2 py-0.5 rounded-full mt-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+                                +2.4% vs last month
+                            </div>
+</div>
+</div>
+<!-- Chart Simulation -->
+<div class="flex flex-col gap-4">
+<div class="flex items-end justify-between h-32 gap-3 px-2">
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg relative overflow-hidden" style="height: 75%;">
+<div class="absolute bottom-0 w-full bg-primary/40 rounded-t-lg" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">JAN</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg relative overflow-hidden" style="height: 85%;">
+<div class="absolute bottom-0 w-full bg-primary/50 rounded-t-lg" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">FEB</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg relative overflow-hidden" style="height: 60%;">
+<div class="absolute bottom-0 w-full bg-primary/30 rounded-t-lg" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">MAR</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg relative overflow-hidden" style="height: 95%;">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-lg" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">APR</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg relative overflow-hidden" style="height: 70%;">
+<div class="absolute bottom-0 w-full bg-primary/40 rounded-t-lg" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">MAY</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg relative overflow-hidden" style="height: 80%;">
+<div class="absolute bottom-0 w-full bg-primary/60 rounded-t-lg border-t-2 border-primary" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold text-primary font-bold">JUN</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Daily Log Timeline Card -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+<div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+<div class="flex items-center gap-4">
+<div class="bg-white dark:bg-slate-900 h-12 w-12 rounded-xl flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+<span class="text-[10px] font-bold uppercase text-slate-400 leading-none">Jun</span>
+<span class="text-xl font-black text-slate-900 dark:text-white leading-none mt-1">04</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white">Tuesday's Daily Log</h3>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-xs font-medium text-slate-500">8h 42m total time</span>
+<span class="w-1 h-1 rounded-full bg-slate-300"></span>
+<span class="flex items-center gap-1 text-xs font-bold text-success">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+                                        Present
+                                    </span>
+</div>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="p-8">
+<!-- Timeline -->
+<div class="relative flex flex-col gap-10">
+<!-- Timeline Line -->
+<div class="absolute left-[23px] top-2 bottom-2 w-0.5 bg-slate-100 dark:bg-slate-800"></div>
+<!-- Timeline Item 1 -->
+<div class="relative flex items-start gap-6">
+<div class="z-10 h-12 w-12 rounded-full bg-success/10 border-4 border-white dark:border-slate-900 flex items-center justify-center text-success">
+<span class="material-symbols-outlined text-xl font-bold">login</span>
+</div>
+<div class="flex flex-col gap-1 pt-1.5 flex-1">
+<div class="flex justify-between items-center">
+<h4 class="font-bold text-slate-900 dark:text-white">Clock In</h4>
+<span class="text-sm font-bold text-slate-900 dark:text-white">08:52 AM</span>
+</div>
+<p class="text-sm text-slate-500">Main Entrance - Office HQ (San Francisco)</p>
+<div class="flex mt-2">
+<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">On-Site</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative flex items-start gap-6">
+<div class="z-10 h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-900 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined text-xl">restaurant</span>
+</div>
+<div class="flex flex-col gap-1 pt-1.5 flex-1">
+<div class="flex justify-between items-center">
+<h4 class="font-bold text-slate-900 dark:text-white">Lunch Break Start</h4>
+<span class="text-sm font-bold text-slate-500">12:30 PM</span>
+</div>
+<p class="text-sm text-slate-500">Automatic pause initiated</p>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative flex items-start gap-6">
+<div class="z-10 h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-900 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined text-xl">work_history</span>
+</div>
+<div class="flex flex-col gap-1 pt-1.5 flex-1">
+<div class="flex justify-between items-center">
+<h4 class="font-bold text-slate-900 dark:text-white">Resume Work</h4>
+<span class="text-sm font-bold text-slate-500">01:30 PM</span>
+</div>
+<p class="text-sm text-slate-500">Manual clock-in from Web Portal</p>
+</div>
+</div>
+<!-- Timeline Item 4 -->
+<div class="relative flex items-start gap-6">
+<div class="z-10 h-12 w-12 rounded-full bg-warning/10 border-4 border-white dark:border-slate-900 flex items-center justify-center text-warning">
+<span class="material-symbols-outlined text-xl font-bold">logout</span>
+</div>
+<div class="flex flex-col gap-1 pt-1.5 flex-1">
+<div class="flex justify-between items-center">
+<h4 class="font-bold text-slate-900 dark:text-white">Clock Out</h4>
+<span class="text-sm font-bold text-slate-900 dark:text-white">05:34 PM</span>
+</div>
+<p class="text-sm text-slate-500">Remote - Web Portal (Local IP)</p>
+<div class="flex mt-2 items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-warning/10 text-[10px] font-bold text-warning uppercase tracking-tight">Early Leave</span>
+<span class="text-[10px] text-slate-400 font-medium">Scheduled: 06:00 PM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/20 p-6 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center justify-between">
+<div class="flex gap-4">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Productivity</span>
+<span class="text-sm font-bold text-slate-900 dark:text-white">92.4%</span>
+</div>
+<div class="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Break Duration</span>
+<span class="text-sm font-bold text-slate-900 dark:text-white">1h 00m</span>
+</div>
+</div>
+<button class="text-primary text-sm font-bold hover:underline">View Detailed Stats</button>
+</div>
+</div>
+</div>
+<!-- Status Legend Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-3">
+<div class="w-2 h-8 rounded-full bg-success"></div>
+<div>
+<p class="text-xs font-bold text-slate-400 uppercase">Present</p>
+<p class="text-sm font-bold text-slate-900 dark:text-white">On Track</p>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-3">
+<div class="w-2 h-8 rounded-full bg-warning"></div>
+<div>
+<p class="text-xs font-bold text-slate-400 uppercase">Late / Early</p>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Deviation Detected</p>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-3">
+<div class="w-2 h-8 rounded-full bg-danger"></div>
+<div>
+<p class="text-xs font-bold text-slate-400 uppercase">Absent</p>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Action Required</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 px-10">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-xs font-medium">
+<p>© 2024 Odoo Enterprise Solutions. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Help Center</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

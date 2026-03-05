@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Odoo Portal Authentication</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#875A7B", // Vibrant Odoo Purple
+                        "background-airy": "#f8f9fc",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --odoo-purple: #875A7B;
+            --odoo-purple-hover: #714b67;
+        }
+        .airy-gradient {
+            background: radial-gradient(circle at top left, #fdfbfb 0%, #ebedee 100%);
+            background-attachment: fixed;
+        }
+    </style>
+</head>
+<body class="airy-gradient font-display text-slate-800 min-h-screen selection:bg-primary/20">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="absolute inset-0 z-0 opacity-40 pointer-events-none">
+<div class="absolute top-[-5%] right-[-5%] w-[30%] h-[30%] bg-primary/10 rounded-full blur-[100px]"></div>
+<div class="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-blue-100 rounded-full blur-[100px]"></div>
+</div>
+<div class="layout-container flex h-full grow flex-col z-10">
+<header class="flex items-center justify-between whitespace-nowrap px-6 md:px-10 py-5 bg-white/40 backdrop-blur-md border-b border-slate-200/60">
+<div class="flex items-center gap-3">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">hub</span>
+</div>
+<h2 class="text-xl font-bold leading-tight tracking-tight text-slate-900">Odoo Portal</h2>
+</div>
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-5 border border-slate-200 bg-white text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm">
+<span class="truncate">Help</span>
+</button>
+</header>
+<main class="flex flex-1 items-center justify-center p-6">
+<div class="w-full max-w-[520px] bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 p-8 md:p-12">
+<div class="text-center mb-10">
+<h1 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-3">Welcome Back</h1>
+<p class="text-slate-500 text-lg">Connect to your Odoo Instance</p>
+</div>
+<div class="space-y-8">
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-black">1</span>
+<h3 class="font-bold text-xs uppercase tracking-widest text-slate-400">Instance URL</h3>
+</div>
+<div class="flex flex-col gap-2">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">language</span>
+<input class="w-full pl-12 pr-4 h-14 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-slate-700" placeholder="https://yourcompany.odoo.com" type="text" value="https://acme-corp.odoo.com"/>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-black">2</span>
+<h3 class="font-bold text-xs uppercase tracking-widest text-slate-400">Select Database</h3>
+</div>
+<div class="flex gap-2.5 flex-wrap">
+<button class="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-white px-5 text-sm font-semibold shadow-md shadow-primary/20 hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-[18px]">database</span>
+                                Production
+                            </button>
+<button class="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-slate-600 px-5 text-sm font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all">
+<span class="material-symbols-outlined text-[18px]">test_clone</span>
+                                Staging
+                            </button>
+<button class="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-slate-600 px-5 text-sm font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all">
+<span class="material-symbols-outlined text-[18px]">science</span>
+                                Dev
+                            </button>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-black">3</span>
+<h3 class="font-bold text-xs uppercase tracking-widest text-slate-400">Credentials</h3>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col gap-2">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">mail</span>
+<input class="w-full pl-12 pr-4 h-13 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-slate-700" placeholder="Email Address" type="email"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">lock</span>
+<input class="w-full pl-12 pr-12 h-13 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-slate-700" placeholder="Password" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+<div class="flex justify-end mt-1">
+<a class="text-xs text-primary font-bold hover:underline" href="#">Forgot password?</a>
+</div>
+</div>
+</div>
+</section>
+<div class="pt-2">
+<button class="w-full flex items-center justify-center h-14 bg-primary text-white rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.99] border-b-4 border-black/10">
+                            Sign In to Portal
+                        </button>
+<div class="mt-8 flex items-start gap-4 p-5 rounded-xl bg-blue-50/50 border border-blue-100">
+<span class="material-symbols-outlined text-blue-500 text-2xl">info</span>
+<p class="text-[13px] leading-relaxed text-slate-500">
+<strong class="text-slate-700">Odoo 19+ users:</strong> For enhanced security, use <strong>API Keys</strong> instead of your password for third-party integrations.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="p-8 text-center text-slate-400 text-sm">
+<p>© 2024 Odoo Portal Integration. Professional Edition.</p>
+</footer>
+</div>
+</div>
+
+</body></html>

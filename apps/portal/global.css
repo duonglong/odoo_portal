@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* Force React Native Web text layers to use Inter, but allow inline styles to override */
+div[dir="auto"]:not([style*="font-family"]),
+span:not([style*="font-family"]),
+text:not([style*="font-family"]),
+body,
+html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
