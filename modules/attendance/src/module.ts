@@ -31,11 +31,7 @@ export const attendanceModule: ModuleRegistration = {
         ],
     },
     loadScreens: async () => {
-        const [{ default: ClockScreen }, { default: HistoryScreen }] =
-            await Promise.all([
-                import('./screens/ClockScreen.js'),
-                import('./screens/HistoryScreen.js'),
-            ]);
-        return { ClockScreen, HistoryScreen };
+        const { default: HistoryScreen } = await import('./screens/HistoryScreen.js');
+        return { HistoryScreen };
     },
 };

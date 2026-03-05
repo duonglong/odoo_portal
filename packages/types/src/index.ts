@@ -3,7 +3,6 @@ export type {
     OdooConnectionConfig,
     AuthCredentials,
     OdooSession,
-    SavedConnection,
 } from './connection.js';
 
 // Domain & Search
@@ -13,7 +12,6 @@ export type {
     OdooDomainLogic,
     OdooDomain,
     SearchOptions,
-    PaginationInfo,
 } from './domain.js';
 
 // JSON-RPC Protocol
@@ -24,24 +22,16 @@ export type {
     OdooRpcErrorData,
     AuthenticateResult,
     CallKwParams,
-    DatabaseListResult,
 } from './rpc.js';
 
 // Model & Field Mapping
 export type {
     FieldMap,
     ModelMapping,
-    ModelMappingRegistry,
     OdooMany2One,
     OdooX2Many,
     OdooRecord,
 } from './model.js';
-
-// Repository
-export type {
-    Repository,
-    PaginatedResult,
-} from './repository.js';
 
 // Module System
 export type {
@@ -50,15 +40,3 @@ export type {
     ModuleRegistration,
     ScreenComponent,
 } from './module.js';
-
-// Errors
-export type {
-    OdooPortalError,
-    NetworkError,
-    AuthenticationError,
-    AccessDeniedError,
-    RpcError,
-    RecordNotFoundError,
-    SessionExpiredError,
-    PortalError,
-} from './errors.js';

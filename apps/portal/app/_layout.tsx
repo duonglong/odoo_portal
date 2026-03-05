@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { OdooProvider, createConnectionStore, ModuleRegistry, useAuth } from '@odoo-portal/core';
+import { OdooProvider, ModuleRegistry, useAuth } from '@odoo-portal/core';
 import { attendanceModule } from '@odoo-portal/attendance';
-import { platformSessionStorage, asyncStorageAdapter } from '~/lib/storage';
+import { platformSessionStorage } from '~/lib/storage';
 import { createOdooClient } from '~/lib/create-client';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -51,20 +51,13 @@ const queryClient = new QueryClient({
     },
 });
 
-// ── Zustand connection store ──
-const useConnectionStore = createConnectionStore(() => asyncStorageAdapter);
-
 function SessionRestorer() {
     const { restoreSession } = useAuth();
-    const getActiveConnection = useConnectionStore((s) => s.getActiveConnection);
 
     useEffect(() => {
-        const savedConn = getActiveConnection();
-        if (savedConn) {
-            restoreSession({ url: savedConn.url, database: savedConn.database });
-        } else {
-            restoreSession({ url: '', database: '' });
-        }
+        const url = process.env.EXPO_PUBLIC_ODOO_URL ?? '';
+        const database = process.env.EXPO_PUBLIC_ODOO_DATABASE ?? '';
+        restoreSession({ url: url.trim().replace(/\/$/, ''), database: database.trim() });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

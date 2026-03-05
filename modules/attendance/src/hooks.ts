@@ -7,6 +7,8 @@ const QUERY_KEYS = {
     employee: (userId: number) => ['attendance', 'employee', userId] as const,
     records: (employeeId: number, page: number) =>
         ['attendance', 'records', employeeId, page] as const,
+    month: (employeeId: number, year: number, month: number) =>
+        ['attendance', 'month', employeeId, year, month] as const,
 };
 
 /** Hook to get the current user's employee record */
@@ -42,6 +44,26 @@ export const useAttendanceRecords = (
             repo!.getMyAttendance(employeeId!, pageSize, page * pageSize),
         enabled: repo !== null && employeeId !== undefined,
         staleTime: 1000 * 60 * 1, // Attendance data changes often — 1 min
+    });
+};
+
+/** Hook to get all attendance records for a calendar month (for the calendar grid view) */
+export const useMonthAttendance = (
+    client: OdooClient | null,
+    employeeId: number | undefined,
+    year: number,
+    month: number, // 1-indexed
+) => {
+    const repo = useMemo(
+        () => (client ? new AttendanceRepository(client) : null),
+        [client],
+    );
+
+    return useQuery({
+        queryKey: QUERY_KEYS.month(employeeId ?? 0, year, month),
+        queryFn: () => repo!.getMonthAttendance(employeeId!, year, month),
+        enabled: repo !== null && employeeId !== undefined,
+        staleTime: 1000 * 60 * 5, // Monthly view — refresh every 5 min
     });
 };
 

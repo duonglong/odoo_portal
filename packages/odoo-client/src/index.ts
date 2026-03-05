@@ -23,8 +23,6 @@ export {
 // Mappers
 export {
     mapFromOdoo,
-    mapToOdoo,
     getOdooFields,
-    many2oneId,
-    many2oneName,
 } from './mappers/index.js';
+

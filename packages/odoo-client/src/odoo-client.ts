@@ -5,8 +5,8 @@ import type {
     OdooDomain,
     SearchOptions,
     AuthenticateResult,
-    DatabaseListResult,
 } from '@odoo-portal/types';
+
 
 import { JsonRpcTransport } from './json-rpc-transport.js';
 import type { ProxyTransport } from './proxy-transport.js';
@@ -194,18 +194,6 @@ export class OdooClient {
     }
 
     // ──────────────────────────────────────────
-    // Database
-    // ──────────────────────────────────────────
-
-    /** List available databases on the Odoo instance */
-    async listDatabases(): Promise<string[]> {
-        return this.transport.call<DatabaseListResult>(
-            '/web/database/list',
-            {},
-        );
-    }
-
-    // ──────────────────────────────────────────
     // CRUD Operations
     // ──────────────────────────────────────────
 
@@ -234,70 +222,13 @@ export class OdooClient {
         return this.callKw<T[]>(model, 'search_read', [], kwargs);
     }
 
-    /** Read specific records by IDs */
-    async read<T = Record<string, unknown>>(
-        model: string,
-        ids: number[],
-        fields: string[] = [],
-    ): Promise<T[]> {
-        this.assertAuthenticated();
-
-        return this.callKw<T[]>(model, 'read', [ids], {
-            fields,
-            context: this.session!.userContext,
-        });
-    }
-
-    /** Count records matching a domain */
-    async searchCount(model: string, domain: OdooDomain = []): Promise<number> {
-        this.assertAuthenticated();
-
-        return this.callKw<number>(model, 'search_count', [domain], {
-            context: this.session!.userContext,
-        });
-    }
-
-    /** Create a new record. Returns the new record's ID. */
-    async create(model: string, values: Record<string, unknown>): Promise<number> {
-        this.assertAuthenticated();
-
-        return this.callKw<number>(model, 'create', [values], {
-            context: this.session!.userContext,
-        });
-    }
-
-    /** Update an existing record. Returns true on success. */
-    async write(
-        model: string,
-        ids: number[],
-        values: Record<string, unknown>,
-    ): Promise<boolean> {
-        this.assertAuthenticated();
-
-        return this.callKw<boolean>(model, 'write', [ids, values], {
-            context: this.session!.userContext,
-        });
-    }
-
-    /** Delete records by IDs. Returns true on success. */
-    async unlink(model: string, ids: number[]): Promise<boolean> {
-        this.assertAuthenticated();
-
-        return this.callKw<boolean>(model, 'unlink', [ids], {
-            context: this.session!.userContext,
-        });
-    }
-
     // ──────────────────────────────────────────
     // Generic Method Call
     // ──────────────────────────────────────────
 
     /**
-     * Call any method on any Odoo model.
-     * This is the escape hatch for custom Odoo methods.
-     *
-     * Example:
-     *   await client.callKw('hr.employee', 'attendance_manual', [{ employee_id: 1 }]);
+     * Call any method on any Odoo model via call_kw.
+     * This is the escape hatch for ORM methods.
      */
     async callKw<T = unknown>(
         model: string,
@@ -316,6 +247,21 @@ export class OdooClient {
                 context: kwargs['context'] ?? this.session!.userContext,
             },
         });
+    }
+
+    /**
+     * Call any Odoo HTTP controller route directly via JSON-RPC.
+     * Use this for controller endpoints that are NOT ORM methods (e.g. /hr_attendance/manual_selection).
+     *
+     * Example:
+     *   await client.callRoute('/hr_attendance/manual_selection', { token, employee_id: 1 });
+     */
+    async callRoute<T = unknown>(
+        endpoint: string,
+        params: Record<string, unknown> = {},
+    ): Promise<T> {
+        this.assertAuthenticated();
+        return this.transport.call<T>(endpoint, params);
     }
 
     // ──────────────────────────────────────────

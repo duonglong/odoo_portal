@@ -46,29 +46,65 @@ export class AttendanceRepository {
     }
 
     /**
-     * Check in or check out using Odoo's native attendance method.
-     * Odoo 19 exposes `attendance_manual` on hr.employee.
+     * Get all attendance records for a specific calendar month.
+     * Used for the calendar-grid view — no pagination, fetches entire month at once.
      */
-    async checkInOut(
-        action: AttendanceAction,
-    ): Promise<{ action: 'check_in' | 'check_out'; attendance_id: number }> {
-        return this.client.callKw<{
-            action: 'check_in' | 'check_out';
-            attendance_id: number;
-        }>(
-            EMPLOYEE_MODEL,
-            'attendance_manual',
-            [[action.employeeId]],
-            {
-                next_action: action.reason ?? false,
-            },
+    async getMonthAttendance(
+        employeeId: number,
+        year: number,
+        month: number, // 1-indexed (1 = January)
+    ): Promise<AttendanceRecord[]> {
+        // Build ISO date strings for the first and last second of the month
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 1); // first day of next month (exclusive)
+        const firstIso = firstDay.toISOString().slice(0, 19).replace('T', ' ');
+        const lastIso = lastDay.toISOString().slice(0, 19).replace('T', ' ');
+
+        const domain: OdooDomain = [
+            ['employee_id', '=', employeeId],
+            ['check_in', '>=', firstIso],
+            ['check_in', '<', lastIso],
+        ];
+        const fields = getOdooFields(attendanceFieldMap);
+        const raw = await this.client.searchRead<Record<string, unknown>>(
+            ATTENDANCE_MODEL,
+            domain,
+            fields,
+            { limit: 200, order: 'check_in asc' },
         );
+        return raw.map((r) => mapFromOdoo<AttendanceRecord>(r, attendanceFieldMap));
     }
 
-    /** Count total attendance records for an employee */
-    async countAttendance(employeeId: number): Promise<number> {
-        return this.client.searchCount(ATTENDANCE_MODEL, [
-            ['employee_id', '=', employeeId],
-        ]);
+    /**
+     * Fetch the attendance kiosk key from the user's company.
+     * Required as the token param for /hr_attendance/manual_selection.
+     */
+    private async getKioskToken(): Promise<string> {
+        const raw = await this.client.searchRead<Record<string, unknown>>(
+            'res.company',
+            [],
+            ['attendance_kiosk_key'],
+            { limit: 1 },
+        );
+        const token = raw[0]?.['attendance_kiosk_key'];
+        if (!token || typeof token !== 'string') {
+            throw new Error('Could not retrieve attendance kiosk token from company settings.');
+        }
+        return token;
     }
+
+    /**
+     * Check in or check out using Odoo 19's /hr_attendance/manual_selection endpoint.
+     * (attendance_manual was removed in Odoo 17+)
+     */
+    async checkInOut(action: AttendanceAction): Promise<unknown> {
+        const token = await this.getKioskToken();
+        return this.client.callRoute('/hr_attendance/manual_selection', {
+            token,
+            employee_id: action.employeeId,
+            pin_code: action.pinCode ?? '',
+            work_location: false,
+        });
+    }
+
 }

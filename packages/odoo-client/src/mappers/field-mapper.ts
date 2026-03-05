@@ -1,4 +1,4 @@
-import type { OdooMany2One, FieldMap, OdooRecord } from '@odoo-portal/types';
+import type { FieldMap, OdooRecord } from '@odoo-portal/types';
 
 /**
  * Utility to map between Odoo field names and clean domain property names.
@@ -27,25 +27,6 @@ export const mapFromOdoo = <T>(
 };
 
 /**
- * Map a domain object to Odoo field values for create/write operations.
- * Reverses the field map direction.
- */
-export const mapToOdoo = (
-    data: Record<string, unknown>,
-    fieldMap: FieldMap,
-): Record<string, unknown> => {
-    const result: Record<string, unknown> = {};
-
-    for (const [domainKey, odooField] of Object.entries(fieldMap)) {
-        if (domainKey in data) {
-            result[odooField] = data[domainKey];
-        }
-    }
-
-    return result;
-};
-
-/**
  * Get the list of Odoo field names from a field map.
  * Used to construct the `fields` param for searchRead.
  */
@@ -71,14 +52,3 @@ const normalizeOdooValue = (value: unknown): unknown => {
     return value;
 };
 
-/**
- * Extract the ID from a many2one value.
- */
-export const many2oneId = (value: OdooMany2One): number | null =>
-    Array.isArray(value) ? value[0] : null;
-
-/**
- * Extract the display name from a many2one value.
- */
-export const many2oneName = (value: OdooMany2One): string | null =>
-    Array.isArray(value) ? value[1] : null;

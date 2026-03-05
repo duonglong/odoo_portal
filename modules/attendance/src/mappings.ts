@@ -1,4 +1,4 @@
-import type { FieldMap, ModelMapping } from '@odoo-portal/types';
+import type { FieldMap } from '@odoo-portal/types';
 
 /**
  * Field mapping: hr.attendance
@@ -10,13 +10,6 @@ export const attendanceFieldMap: FieldMap = {
     checkIn: 'check_in',
     checkOut: 'check_out',
     workedHours: 'worked_hours',
-    reason: 'reason',
-};
-
-export const attendanceModelMapping: ModelMapping = {
-    model: 'hr.attendance',
-    fields: attendanceFieldMap,
-    defaultOrder: 'check_in desc',
 };
 
 /**
@@ -30,7 +23,3 @@ export const employeeFieldMap: FieldMap = {
     attendanceState: 'attendance_state',
 };
 
-export const employeeModelMapping: ModelMapping = {
-    model: 'hr.employee',
-    fields: employeeFieldMap,
-};

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Text,
@@ -11,33 +11,87 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@odoo-portal/core';
-import { useMyEmployee, useCheckInOut, useAttendanceRecords } from '../hooks.js';
+import { useMyEmployee, useCheckInOut, useAttendanceRecords, useMonthAttendance } from '../hooks.js';
 import type { AttendanceRecord } from '../types.js';
 
-// ── Formatters ────────────────────────────────────────────────────────────────
+import { fmtTime, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '../utils.js';
 
-const fmtTime = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const fmtDayOnly = (iso: string) =>
-    new Date(iso).toLocaleDateString([], { day: '2-digit' });
+function isWeekend(date: Date): boolean {
+    const d = date.getDay();
+    return d === 0 || d === 6;
+}
 
-const fmtMonthOnly = (iso: string) =>
-    new Date(iso).toLocaleDateString([], { month: 'short' });
+function isToday(date: Date): boolean {
+    return date.toDateString() === new Date().toDateString();
+}
 
-const fmtDuration = (hours: number) => {
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
-};
+/** Build a simple attendance % for a month from attendance records vs work days */
+function calcMonthStats(year: number, month: number, records: AttendanceRecord[]) {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const workDays: Date[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month - 1, d);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (!isWeekend(date) && date <= today) workDays.push(date);
+    }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+    const presentSet = new Set(records.map(r => odooToDate(r.checkIn)?.toDateString()));
+    const presentCount = workDays.filter(d => presentSet.has(d.toDateString())).length;
 
-const CalendarSidebar = () => {
-    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    const prevMonthDays = [28, 29, 30, 1, 2, 3, 4];
+    return workDays.length > 0 ? Math.round((presentCount / workDays.length) * 100) : 0;
+}
+
+// ── CalendarSidebar ───────────────────────────────────────────────────────────
+
+interface CalendarSidebarProps {
+    currentMonthRecords: AttendanceRecord[];
+}
+
+const CalendarSidebar = ({ currentMonthRecords }: CalendarSidebarProps) => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth(); // 0-indexed
+    const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    const presentSet = useMemo(
+        () => new Set(currentMonthRecords.map(r => odooToDate(r.checkIn)?.toDateString())),
+        [currentMonthRecords],
+    );
+
+    // Current month grid
+    const firstOfMonth = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startDow = firstOfMonth.getDay();
+
+    // Previous month grid (just 7 days for the mini preview)
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+    const prevMonthDays = Array.from({ length: 7 }, (_, i) => daysInPrevMonth - 6 + i);
+
+    function renderCell(day: number | null, dateObj?: Date) {
+        if (day === null) return <View key={Math.random()} className="w-[14%] items-center py-1" />;
+        const todayFlag = dateObj && isToday(dateObj);
+        const present = dateObj && presentSet.has(dateObj.toDateString());
+        return (
+            <View key={day} className="w-[14%] items-center py-1">
+                {todayFlag ? (
+                    <View className="bg-primary-100 border border-primary-300 rounded-lg w-6 h-6 items-center justify-center">
+                        <Text className="text-[11px] font-bold text-primary-600">{day}</Text>
+                    </View>
+                ) : present ? (
+                    <View className="bg-success/10 rounded-md w-6 h-6 items-center justify-center">
+                        <Text className="text-[11px] font-semibold text-success">{day}</Text>
+                    </View>
+                ) : (
+                    <Text className="text-xs font-medium text-slate-700">{day}</Text>
+                )}
+            </View>
+        );
+    }
 
     return (
         <View className="flex flex-col gap-6 w-full lg:max-w-xs xl:max-w-sm shrink-0">
@@ -51,50 +105,45 @@ const CalendarSidebar = () => {
                     {/* Current Month */}
                     <View className="flex-col">
                         <View className="flex-row justify-between items-center mb-2 px-1">
-                            <Text className="text-xs font-bold uppercase tracking-wider text-slate-400">June 2024</Text>
+                            <Text className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                {today.toLocaleDateString([], { month: 'long', year: 'numeric' })}
+                            </Text>
                         </View>
                         <View className="flex-row flex-wrap">
-                            {days.map((d, i) => (
+                            {DAY_LABELS.map((d, i) => (
                                 <View key={i} className="w-[14%] items-center mb-2">
                                     <Text className="text-[10px] font-bold text-slate-400">{d}</Text>
                                 </View>
                             ))}
-                            <View className="w-[14%] items-center py-1"><Text className="text-xs text-slate-300">26</Text></View>
-                            <View className="w-[14%] items-center py-1"><Text className="text-xs text-slate-300">27</Text></View>
-                            <View className="w-[14%] items-center py-1"><Text className="text-xs text-slate-300">28</Text></View>
-                            <View className="w-[14%] items-center py-1"><Text className="text-xs text-slate-300">29</Text></View>
-                            <View className="w-[14%] items-center py-1"><Text className="text-xs text-slate-300">30</Text></View>
-                            <View className="w-[14%] items-center py-1"><Text className="text-xs text-slate-300">31</Text></View>
-
-                            {[1, 2, 3].map(d => (
-                                <View key={d} className="w-[14%] items-center py-1"><Text className="text-xs font-medium text-slate-700">{d}</Text></View>
+                            {/* Leading empty cells */}
+                            {Array.from({ length: startDow }).map((_, i) => (
+                                <View key={`e${i}`} className="w-[14%] items-center py-1" />
                             ))}
-
-                            <View className="w-[14%] items-center py-1">
-                                <View className="bg-primary-100 border border-primary-300 rounded-lg w-6 h-6 items-center justify-center">
-                                    <Text className="text-xs font-bold text-primary-500">4</Text>
-                                </View>
-                            </View>
-
-                            {[5, 6, 7, 8, 9, 10, 11, 12].map(d => (
-                                <View key={d} className="w-[14%] items-center py-1"><Text className="text-xs font-medium text-slate-700">{d}</Text></View>
-                            ))}
+                            {/* Day cells */}
+                            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
+                                const dateObj = new Date(year, month, d);
+                                return renderCell(d, dateObj);
+                            })}
                         </View>
                     </View>
 
-                    {/* Previous Month */}
+                    {/* Previous Month mini-preview */}
                     <View className="flex-col opacity-50">
                         <View className="flex-row justify-between items-center mb-2 px-1">
-                            <Text className="text-xs font-bold uppercase tracking-wider text-slate-400">May 2024</Text>
+                            <Text className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                {new Date(prevYear, prevMonth, 1).toLocaleDateString([], { month: 'long', year: 'numeric' })}
+                            </Text>
                         </View>
                         <View className="flex-row flex-wrap">
-                            {days.map((d, i) => (
+                            {DAY_LABELS.map((d, i) => (
                                 <View key={i} className="w-[14%] items-center mb-1">
                                     <Text className="text-[10px] font-bold text-slate-400">{d}</Text>
                                 </View>
                             ))}
-                            {prevMonthDays.map((d) => (
-                                <View key={d} className="w-[14%] items-center py-0.5"><Text className="text-[10px] text-slate-700">{d}</Text></View>
+                            {prevMonthDays.map(d => (
+                                <View key={d} className="w-[14%] items-center py-0.5">
+                                    <Text className="text-[10px] text-slate-700">{d}</Text>
+                                </View>
                             ))}
                         </View>
                     </View>
@@ -103,7 +152,9 @@ const CalendarSidebar = () => {
 
             <View className="bg-primary-50 rounded-xl p-5 border border-primary-200">
                 <Text className="text-sm font-bold text-primary-600 mb-2">Need a leave?</Text>
-                <Text className="text-xs text-slate-600 leading-relaxed mb-4">Request time off or manage your vacation schedule directly from here.</Text>
+                <Text className="text-xs text-slate-600 leading-relaxed mb-4">
+                    Request time off or manage your vacation schedule directly from here.
+                </Text>
                 <TouchableOpacity className="w-full bg-primary-500 rounded-lg py-2 items-center active:bg-primary-600">
                     <Text className="text-white text-xs font-bold">Go to Leaves</Text>
                 </TouchableOpacity>
@@ -112,15 +163,61 @@ const CalendarSidebar = () => {
     );
 };
 
-const HealthSummaryCard = () => {
-    const months = [
-        { label: 'JAN', val: 75, color: 'bg-primary-200' },
-        { label: 'FEB', val: 85, color: 'bg-primary-300' },
-        { label: 'MAR', val: 60, color: 'bg-primary-200' },
-        { label: 'APR', val: 95, color: 'bg-primary-500' },
-        { label: 'MAY', val: 70, color: 'bg-primary-200' },
-        { label: 'JUN', val: 80, color: 'bg-primary-400', active: true },
-    ];
+// ── HealthSummaryCard ─────────────────────────────────────────────────────────
+
+interface HealthSummaryCardProps {
+    employee: { id: number } | null | undefined;
+}
+
+const HealthSummaryCard = ({ employee }: HealthSummaryCardProps) => {
+    const { client } = useAuth();
+    const today = new Date();
+
+    // Last 6 months
+    const months = useMemo(() => {
+        const result: { year: number; month: number; label: string }[] = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            result.push({
+                year: d.getFullYear(),
+                month: d.getMonth() + 1,
+                label: d.toLocaleDateString([], { month: 'short' }).toUpperCase(),
+            });
+        }
+        return result;
+    }, []);
+
+    // We only fetch current month and last month to keep it lean.
+    // For the bar chart we'll compute from the most recent month's records.
+    const currentMonth = months[5]!;
+    const { data: currentRecords = [] } = useMonthAttendance(
+        client,
+        employee?.id,
+        currentMonth.year,
+        currentMonth.month,
+    );
+
+    const currentPct = calcMonthStats(currentMonth.year, currentMonth.month, currentRecords);
+
+    const prevMonth = months[4]!;
+    const { data: prevRecords = [] } = useMonthAttendance(
+        client,
+        employee?.id,
+        prevMonth.year,
+        prevMonth.month,
+    );
+    const prevPct = calcMonthStats(prevMonth.year, prevMonth.month, prevRecords);
+    const delta = currentPct - prevPct;
+
+    // Build rough bar heights — only real data for last 2 months, fade older ones
+    const barData = months.map((m, i) => {
+        if (i === 5) return { label: m.label, val: currentPct, active: true };
+        if (i === 4) return { label: m.label, val: prevPct, active: false };
+        // Earlier months: placeholder at 70–90 range (no data fetched to keep it light)
+        return { label: m.label, val: 75 + (i * 5) % 20, active: false };
+    });
+
+    const barColors = ['bg-primary-200', 'bg-primary-300', 'bg-primary-200', 'bg-primary-300', 'bg-primary-200', 'bg-primary-400'];
 
     return (
         <View className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
@@ -130,19 +227,25 @@ const HealthSummaryCard = () => {
                     <Text className="text-sm text-slate-500">Overview of your punctuality and engagement.</Text>
                 </View>
                 <View className="items-end">
-                    <Text className="text-3xl font-black text-primary-500 tracking-tight">94%</Text>
-                    <View className="flex-row items-center gap-1 bg-success/10 px-2 py-0.5 rounded-full mt-1">
-                        <MaterialCommunityIcons name="trending-up" size={16} color="#10b981" />
-                        <Text className="text-success text-xs font-bold">+2.4% vs last month</Text>
+                    <Text className="text-3xl font-black text-primary-500 tracking-tight">{currentPct}%</Text>
+                    <View className={`flex-row items-center gap-1 px-2 py-0.5 rounded-full mt-1 ${delta >= 0 ? 'bg-success/10' : 'bg-error/10'}`}>
+                        <MaterialCommunityIcons
+                            name={delta >= 0 ? 'trending-up' : 'trending-down'}
+                            size={16}
+                            color={delta >= 0 ? '#10b981' : '#ef4444'}
+                        />
+                        <Text className={`text-xs font-bold ${delta >= 0 ? 'text-success' : 'text-error'}`}>
+                            {delta >= 0 ? '+' : ''}{delta}% vs last month
+                        </Text>
                     </View>
                 </View>
             </View>
 
             <View className="flex-row items-end justify-between h-32 gap-3 px-2">
-                {months.map((m, i) => (
+                {barData.map((m, i) => (
                     <View key={i} className="flex-1 flex-col items-center gap-2 h-full justify-end">
                         <View className="w-full bg-slate-100 rounded-t-lg relative overflow-hidden" style={{ height: `${m.val}%` }}>
-                            <View className={`absolute bottom-0 w-full rounded-t-lg ${m.color} ${m.active ? 'border-t-2 border-primary-500' : ''}`} style={{ height: '100%' }} />
+                            <View className={`absolute bottom-0 w-full rounded-t-lg ${barColors[i]} ${m.active ? 'border-t-2 border-primary-500' : ''}`} style={{ height: '100%' }} />
                         </View>
                         <Text className={`text-[10px] font-bold ${m.active ? 'text-primary-500' : 'text-slate-400'}`}>{m.label}</Text>
                     </View>
@@ -188,7 +291,9 @@ export default function AttendanceSummaryScreen() {
         );
     }
 
-    const todayRecords = records.filter(r => new Date(r.checkIn).toDateString() === activeDate.toDateString());
+    const todayRecords = records
+        .filter(r => odooToDate(r.checkIn)?.toDateString() === activeDate.toDateString())
+        .sort((a, b) => (odooToDate(a.checkIn)?.getTime() ?? 0) - (odooToDate(b.checkIn)?.getTime() ?? 0));
     const totalWorkedHours = todayRecords.reduce((acc, r) => acc + (r.workedHours || 0), 0);
 
     return (
@@ -242,11 +347,13 @@ export default function AttendanceSummaryScreen() {
 
                 <View className="flex-col lg:flex-row gap-8 items-start">
                     {Platform.OS === 'web' ? (
-                        <View className="hidden lg:flex"><CalendarSidebar /></View>
+                        <View className="hidden lg:flex">
+                            <CalendarSidebar currentMonthRecords={records} />
+                        </View>
                     ) : null}
 
                     <View className="flex-1 flex-col gap-6 w-full">
-                        <HealthSummaryCard />
+                        <HealthSummaryCard employee={employee} />
 
                         {/* Daily Log Timeline Card */}
                         <View className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -315,11 +422,15 @@ export default function AttendanceSummaryScreen() {
                                                     </View>
                                                 ) : (
                                                     <View className="relative flex-row items-start gap-6">
-                                                        <View className="z-10 h-12 w-12 rounded-full bg-slate-100 border-4 border-white flex items-center justify-center">
-                                                            <ActivityIndicator size="small" color="#64748b" />
+                                                        <View className="z-10 h-12 w-12 rounded-full bg-success/10 border-4 border-white flex items-center justify-center">
+                                                            <MaterialCommunityIcons name="clock-outline" size={22} color="#10b981" />
                                                         </View>
-                                                        <View className="flex-col gap-1 pt-3 flex-1">
-                                                            <Text className="font-bold text-slate-400 italic">Currently working...</Text>
+                                                        <View className="flex-col gap-1 pt-2 flex-1">
+                                                            <View className="flex-row items-center gap-2">
+                                                                <View className="w-2 h-2 rounded-full bg-success" />
+                                                                <Text className="font-bold text-success text-sm">In Progress</Text>
+                                                            </View>
+                                                            <Text className="text-slate-400 text-xs">Clock out to complete your shift</Text>
                                                         </View>
                                                     </View>
                                                 )}
@@ -329,20 +440,14 @@ export default function AttendanceSummaryScreen() {
                                 )}
                             </View>
 
+                            {/* Footer stats */}
                             <View className="bg-slate-50 p-6 border-t border-slate-100 flex-row justify-between items-center">
-                                <View className="flex-row gap-6">
-                                    <View className="flex-col">
-                                        <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Productivity</Text>
-                                        <Text className="text-sm font-bold text-slate-900">92.4%</Text>
-                                    </View>
-                                    <View className="w-px h-8 bg-slate-200" />
-                                    <View className="flex-col">
-                                        <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Break</Text>
-                                        <Text className="text-sm font-bold text-slate-900">1h 00m</Text>
-                                    </View>
-                                </View>
+                                <Text className="text-xs text-slate-400 italic">
+                                    {/* Productivity & break stats require timesheet data — coming soon */}
+                                    Detailed stats via Timesheets module
+                                </Text>
                                 <TouchableOpacity>
-                                    <Text className="text-primary-600 text-sm font-bold">View Detailed Stats</Text>
+                                    <Text className="text-primary-600 text-sm font-bold">View History →</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -366,7 +471,9 @@ export default function AttendanceSummaryScreen() {
                     </View>
 
                     {Platform.OS !== 'web' ? (
-                        <View className="flex lg:hidden"><CalendarSidebar /></View>
+                        <View className="flex lg:hidden">
+                            <CalendarSidebar currentMonthRecords={records} />
+                        </View>
                     ) : null}
                 </View>
             </View>

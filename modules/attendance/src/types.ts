@@ -9,7 +9,6 @@ export interface AttendanceRecord {
     checkIn: string;   // ISO 8601
     checkOut: string | null;
     workedHours: number;
-    reason: string | null;
 }
 
 /**
@@ -33,4 +32,6 @@ export interface AttendanceAction {
     timestamp?: string;
     /** Reason / note (optional) */
     reason?: string;
+    /** PIN code required when company attendance_kiosk_use_pin is enabled */
+    pinCode?: string;
 }

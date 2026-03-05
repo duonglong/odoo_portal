@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import type {
     OdooConnectionConfig,
     AuthCredentials,
@@ -6,7 +6,6 @@ import type {
 } from '@odoo-portal/types';
 import { OdooClient, AuthenticationError } from '@odoo-portal/odoo-client';
 import { useOdooContext } from '../providers/odoo-provider.js';
-import { useConnectionStore } from '../stores/connection-store.js';
 
 interface UseAuthReturn {
     /** Current session (null if not logged in) */
@@ -36,9 +35,6 @@ interface UseAuthReturn {
 
     /** Try to restore a previously saved session */
     restoreSession: (config: OdooConnectionConfig) => Promise<OdooSession | null>;
-
-    /** List available databases for a given Odoo URL */
-    listDatabases: (url: string) => Promise<string[]>;
 }
 
 /**
@@ -66,9 +62,6 @@ export const useAuth = (): UseAuthReturn => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
-    const setActive = useConnectionStore((s) => s.setActive);
-    const addConnection = useConnectionStore((s) => s.addConnection);
-
     const login = useCallback(
         async (
             config: OdooConnectionConfig,
@@ -84,18 +77,6 @@ export const useAuth = (): UseAuthReturn => {
                 setActiveClient(client);
                 setSession(newSession);
 
-                // Save connection for multi-instance switching
-                const connectionId = `${config.url}|${config.database}`;
-                addConnection({
-                    id: connectionId,
-                    url: config.url,
-                    database: config.database,
-                    username: credentials.login,
-                    label: `${config.database} @ ${new URL(config.url).hostname}`,
-                    lastUsedAt: new Date().toISOString(),
-                });
-                setActive(connectionId);
-
                 return newSession;
             } catch (err) {
                 const authError =
@@ -108,7 +89,7 @@ export const useAuth = (): UseAuthReturn => {
                 setIsLoading(false);
             }
         },
-        [getClient, addConnection, setActive, setSession, setActiveClient],
+        [getClient, setSession, setActiveClient],
     );
 
     const logout = useCallback(async () => {
@@ -117,8 +98,7 @@ export const useAuth = (): UseAuthReturn => {
             setActiveClient(null);
         }
         setSession(null);
-        setActive(null);
-    }, [activeClient, setSession, setActiveClient, setActive]);
+    }, [activeClient, setSession, setActiveClient]);
 
     const restoreSession = useCallback(
         async (config: OdooConnectionConfig): Promise<OdooSession | null> => {
@@ -146,14 +126,6 @@ export const useAuth = (): UseAuthReturn => {
         [getClient, setSession, setActiveClient, setIsSessionRestoring],
     );
 
-    const listDatabases = useCallback(
-        async (url: string): Promise<string[]> => {
-            const client = getClient({ url, database: '' });
-            return client.listDatabases();
-        },
-        [getClient],
-    );
-
     return {
         session,
         isLoading,
@@ -165,6 +137,5 @@ export const useAuth = (): UseAuthReturn => {
         login,
         logout,
         restoreSession,
-        listDatabases,
     };
 };

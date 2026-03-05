@@ -47,8 +47,4 @@ const asyncStorage: SessionStorage = {
 export const platformSessionStorage: SessionStorage =
     Platform.OS === 'web' ? asyncStorage : secureStorage;
 
-/**
- * AsyncStorage adapter for Zustand connection store.
- * Used by createConnectionStore() in the app's _layout.tsx.
- */
-export const asyncStorageAdapter = AsyncStorage;
+
