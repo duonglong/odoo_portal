@@ -2,7 +2,7 @@
 
 A modular, cross-platform portal for **Odoo 19** built with Expo, TypeScript, and a plug-in module architecture.
 
-> **Status:** Phases 1–3 complete. Foundation, core React layer, and the attendance module are implemented and type-checked.
+> **Status:** Foundation, core React layer, and the attendance module are implemented and type-checked. The attendance module includes a daily-log timeline, a monthly calendar view, a history screen, and a working clock-in / clock-out integration with Odoo 19.
 
 ---
 
@@ -18,7 +18,7 @@ A modular, cross-platform portal for **Odoo 19** built with Expo, TypeScript, an
 ```bash
 pnpm install                # install all workspace dependencies
 pnpm turbo typecheck        # verify types across all packages (0 errors expected)
-pnpm turbo test             # run unit tests (18 passing expected)
+pnpm turbo test             # run unit tests
 ```
 
 ### Run the app
@@ -174,12 +174,13 @@ odoo_portal/
 │           ├── mappings.ts
 │           ├── repository.ts
 │           ├── hooks.ts
+│           ├── utils.ts
 │           ├── module.ts
 │           ├── index.ts
 │           └── screens/
-│               ├── AttendanceSummaryScreen.tsx  ← Dashboard with timeline & stats
-│               ├── ClockScreen.tsx
-│               └── HistoryScreen.tsx
+│               ├── AttendanceSummaryScreen.tsx  ← Daily log timeline + clock-in/out
+│               ├── MyAttendanceScreen.tsx        ← Monthly calendar + stats
+│               └── HistoryScreen.tsx             ← Paginated attendance history
 ├── apps/
 │   ├── api/                ← Hono BFF proxy (resolves web CORS, holds Odoo session)
 │   └── portal/             ← Expo universal app (iOS, Android, Web)
@@ -189,11 +190,14 @@ odoo_portal/
 │       └── app/            ← Expo Router file-system routes (thin entry points)
 │           ├── _layout.tsx
 │           ├── (auth)/
-│           │   └── login.tsx        ← 1 line: re-exports LoginScreen
+│           │   └── login.tsx           ← 1 line: re-exports LoginScreen
 │           └── (app)/
-│               ├── _layout.tsx      ← Auth guard + nav shell
-│               ├── index.tsx        ← Dashboard
-│               └── attendance.tsx   ← 1 line: re-exports AttendanceSummaryScreen
+│               ├── _layout.tsx         ← Auth guard + nav shell
+│               ├── index.tsx           ← Dashboard
+│               ├── attendance.tsx      ← re-exports AttendanceSummaryScreen
+│               └── attendance/
+│                   ├── history.tsx     ← re-exports HistoryScreen
+│                   └── my-attendance.tsx ← re-exports MyAttendanceScreen
 ├── turbo.json              ← Turborepo task pipeline
 ├── pnpm-workspace.yaml     ← Workspace config
 └── tsconfig.base.json      ← Strict TS shared config
@@ -246,9 +250,9 @@ Only modules matching the user's Odoo groups appear in navigation
 ### 4. Data Fetching
 
 All data flows through **TanStack Query v5**:
-- `useOdooQuery()` — searchRead with auto caching
-- `useOdooCreate/Update/Delete()` — mutations that auto-invalidate related queries
-- `useOdooCall()` — escape hatch for any custom Odoo method
+- `useQuery()` — data fetching with auto caching (via repository methods)
+- `useMutation()` — mutations (e.g. `useCheckInOut`) that auto-invalidate related queries
+- Repository methods are the single source of truth for query functions
 
 ---
 
@@ -436,23 +440,27 @@ interface ModuleRegistration {
 ## Data Flow
 
 ```
-User taps "Check In"
+User taps "Clock In / Clock Out"
        │
        ▼
-ClockScreen (React)
-  └─ useCheckInOut()       ← TanStack Query mutation hook
+AttendanceSummaryScreen (React)
+  └─ useCheckInOut()                        ← TanStack Query mutation hook
        └─ AttendanceRepository.checkInOut()
-            └─ OdooClient.callKw('hr.employee', 'attendance_manual', ...)
-                 └─ JsonRpcTransport.call()
-                      └─ fetch('https://odoo.example.com/web/dataset/call_kw', ...)
-                           └─ JSON-RPC 2.0 request
+            ├─ .getKioskToken()             ← searchRead('res.company', ['attendance_kiosk_key'])
+            └─ OdooClient.callRoute('/hr_attendance/manual_selection', { token, employee_id })
+                 └─ JsonRpcTransport.call() ← POST JSON-RPC 2.0
+                      └─ Odoo controller calls employee._attendance_action_change()
        │
        ▼ on success
 TanStack Query invalidates ['attendance', 'employee'] + ['attendance', 'records']
        │
        ▼
-ClockScreen re-renders with updated attendance state
+Screen re-renders with updated attendance state
 ```
+
+> **Note:** The old `hr.employee.attendance_manual` ORM method was removed in Odoo 17+.
+> The correct Odoo 19 API is the `/hr_attendance/manual_selection` HTTP controller route,
+> called via `OdooClient.callRoute()` (not `callKw`).
 
 ---
 
