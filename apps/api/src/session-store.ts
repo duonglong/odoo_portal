@@ -6,8 +6,8 @@
  */
 
 export interface StoredSession {
-    /** Raw `session_id=xxx` cookie value to send to Odoo */
-    odooCookieValue: string;
+    /** The raw password or API key to inject into execute_kw calls */
+    password: string;
     /** The Odoo instance URL this session belongs to */
     odooUrl: string;
     /** Odoo database */

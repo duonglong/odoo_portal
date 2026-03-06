@@ -29,7 +29,7 @@ serve({ fetch: app.fetch, port }, (info) => {
     console.log(`🚀 Odoo Portal BFF proxy running on http://localhost:${info.port}`);
     console.log(`   Health:  GET  http://localhost:${info.port}/health`);
     console.log(`   Login:   POST http://localhost:${info.port}/auth/login`);
-    console.log(`   Proxy:   POST http://localhost:${info.port}/proxy`);
+    console.log(`   Proxy:   POST http://localhost:${info.port}/proxy/<odoo-path>`);
 });
 
 export { app };

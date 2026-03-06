@@ -1,4 +1,6 @@
 import type { ModuleRegistration } from '@odoo-portal/types';
+import AttendanceHoursMetric from './widgets/AttendanceHoursMetric.js';
+import AttendanceModuleCard from './widgets/AttendanceModuleCard.js';
 
 /**
  * Attendance module registration.
@@ -34,4 +36,16 @@ export const attendanceModule: ModuleRegistration = {
         const { default: HistoryScreen } = await import('./screens/HistoryScreen.js');
         return { HistoryScreen };
     },
+    dashboardWidgets: [
+        {
+            id: 'attendance-hours-today',
+            order: 10,
+            MetricCard: AttendanceHoursMetric as any,
+        },
+        {
+            id: 'attendance-module-card',
+            order: 10,
+            ModuleCard: AttendanceModuleCard as any,
+        },
+    ],
 };

@@ -39,4 +39,5 @@ export type {
     PortalRouteConfig,
     ModuleRegistration,
     ScreenComponent,
+    DashboardWidget,
 } from './module.js';

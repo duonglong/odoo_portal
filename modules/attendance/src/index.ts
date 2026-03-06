@@ -17,3 +17,8 @@ export { useMyEmployee, useAttendanceRecords, useMonthAttendance, useCheckInOut 
 export { default as HistoryScreen } from './screens/HistoryScreen.js';
 export { default as AttendanceSummaryScreen } from './screens/AttendanceSummaryScreen.js';
 export { default as MyAttendanceScreen } from './screens/MyAttendanceScreen.js';
+
+// Dashboard Widgets
+export { default as AttendanceHoursMetric } from './widgets/AttendanceHoursMetric.js';
+export { default as AttendanceModuleCard } from './widgets/AttendanceModuleCard.js';
+

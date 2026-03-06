@@ -29,8 +29,7 @@ interface OdooProviderProps {
     clientOptions?: OdooClientOptions;
     /**
      * Optional factory for creating OdooClient instances.
-     * Use this to inject a platform-aware factory (e.g. one that
-     * uses ProxyTransport on web and direct transport on native).
+     * Use this to inject a custom factory if needed.
      * Defaults to `new OdooClient(config, clientOptions)`.
      */
     clientFactory?: (config: OdooConnectionConfig, options: OdooClientOptions) => OdooClient;

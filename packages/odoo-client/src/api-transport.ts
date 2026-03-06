@@ -2,7 +2,7 @@ import type { JsonRpcRequest, JsonRpcResponse } from '@odoo-portal/types';
 import { NetworkError, AccessDeniedError, RpcError, SessionExpiredError } from './errors.js';
 
 /**
- * ProxyTransport — sends JSON-RPC calls through the BFF proxy.
+ * ApiTransport — sends JSON-RPC calls through the BFF proxy.
  *
  * Used on web where the browser cannot call Odoo directly due to CORS.
  * The proxy holds the Odoo session cookie server-side; this transport
@@ -13,7 +13,7 @@ import { NetworkError, AccessDeniedError, RpcError, SessionExpiredError } from '
  *   Authorization: Bearer <jwt>
  *   { "endpoint": "/web/dataset/call_kw", "params": { ... } }
  */
-export class ProxyTransport {
+export class ApiTransport {
     private requestId = 0;
     private jwt: string | null = null;
     private proxyUrl: string;
@@ -88,27 +88,23 @@ export class ProxyTransport {
     }
 
     /**
-     * Forward a JSON-RPC call through the proxy.
-     *
-     * Mirrors the interface of JsonRpcTransport.call() so OdooClient
-     * can swap transports without changing any call sites.
+     * Forward an execute_kw call through the proxy's JSON-RPC endpoint.
      */
     async call<T = unknown>(
-        endpoint: string,
-        params: Record<string, unknown>,
+        model: string,
+        method: string,
+        args?: unknown[],
+        kwargs?: Record<string, unknown>
     ): Promise<T> {
         if (!this.jwt) {
             throw new SessionExpiredError();
         }
 
-        const body = {
-            endpoint,
-            params,
-        };
+        const body = { model, method, args, kwargs };
 
         let response: Response;
         try {
-            response = await fetch(`${this.proxyUrl}/proxy`, {
+            response = await fetch(`${this.proxyUrl}/proxy/jsonrpc`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -117,7 +113,7 @@ export class ProxyTransport {
                 body: JSON.stringify(body),
             });
         } catch (err) {
-            throw new NetworkError(`${this.proxyUrl}/proxy`, err);
+            throw new NetworkError(`${this.proxyUrl}/proxy/jsonrpc`, err);
         }
 
         if (response.status === 401) {
@@ -127,7 +123,7 @@ export class ProxyTransport {
 
         if (!response.ok) {
             throw new NetworkError(
-                `${this.proxyUrl}/proxy`,
+                `${this.proxyUrl}/proxy/jsonrpc`,
                 new Error(`HTTP ${response.status}: ${response.statusText}`),
             );
         }

@@ -10,7 +10,7 @@ import {
     Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '@odoo-portal/core';
+import { useAuth, useOdooErrorToast, mapOdooError } from '@odoo-portal/core';
 import { useMyEmployee, useCheckInOut, useAttendanceRecords, useMonthAttendance } from '../hooks.js';
 import type { AttendanceRecord } from '../types.js';
 
@@ -269,15 +269,22 @@ export default function AttendanceSummaryScreen() {
 
     const isCheckedIn = employee?.attendanceState === 'checked_in';
     const firstRecord = records[0];
-    const activeDate = firstRecord ? new Date(firstRecord.checkIn) : new Date();
+    const activeDate = firstRecord ? (odooToDate(firstRecord.checkIn) ?? new Date()) : new Date();
+
+    // Derive toast from current mutation state — shown as a banner above the button when needed
+    const checkInOutToast = useOdooErrorToast(checkInOut.error);
 
     const handleCheckInOut = () => {
         if (!employee) return;
         checkInOut.mutate(
             { employeeId: employee.id },
             {
-                onError: (err: Error) => {
-                    Alert.alert('Error', err.message || 'Could not process attendance action');
+                onError: (err: unknown) => {
+                    const toast = mapOdooError(err);
+                    Alert.alert(
+                        toast?.title ?? 'Error',
+                        toast?.message ?? 'Could not process attendance action',
+                    );
                 },
             },
         );
@@ -382,7 +389,7 @@ export default function AttendanceSummaryScreen() {
                                 </TouchableOpacity>
                             </View>
 
-                            <View className="p-8">
+                            <ScrollView className="max-h-[380px]" contentContainerClassName="p-8" showsVerticalScrollIndicator={true}>
                                 {todayRecords.length === 0 ? (
                                     <View className="items-center justify-center py-8 opacity-50">
                                         <MaterialCommunityIcons name="file-search-outline" size={48} color="#94a3b8" />
@@ -438,7 +445,7 @@ export default function AttendanceSummaryScreen() {
                                         ))}
                                     </View>
                                 )}
-                            </View>
+                            </ScrollView>
 
                             {/* Footer stats */}
                             <View className="bg-slate-50 p-6 border-t border-slate-100 flex-row justify-between items-center">

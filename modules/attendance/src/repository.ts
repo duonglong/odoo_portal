@@ -76,35 +76,38 @@ export class AttendanceRepository {
     }
 
     /**
-     * Fetch the attendance kiosk key from the user's company.
-     * Required as the token param for /hr_attendance/manual_selection.
-     */
-    private async getKioskToken(): Promise<string> {
-        const raw = await this.client.searchRead<Record<string, unknown>>(
-            'res.company',
-            [],
-            ['attendance_kiosk_key'],
-            { limit: 1 },
-        );
-        const token = raw[0]?.['attendance_kiosk_key'];
-        if (!token || typeof token !== 'string') {
-            throw new Error('Could not retrieve attendance kiosk token from company settings.');
-        }
-        return token;
-    }
-
-    /**
-     * Check in or check out using Odoo 19's /hr_attendance/manual_selection endpoint.
-     * (attendance_manual was removed in Odoo 17+)
+     * Check in or check out using standard stateless ORM methods instead
+     * of the stateful /hr_attendance/systray_check_in_out controller endpoint.
      */
     async checkInOut(action: AttendanceAction): Promise<unknown> {
-        const token = await this.getKioskToken();
-        return this.client.callRoute('/hr_attendance/manual_selection', {
-            token,
-            employee_id: action.employeeId,
-            pin_code: action.pinCode ?? '',
-            work_location: false,
-        });
+        // 1. Find if the employee already has an open attendance record
+        const openRecords = await this.client.searchRead<{ id: number }>(
+            ATTENDANCE_MODEL,
+            [
+                ['employee_id', '=', action.employeeId],
+                ['check_out', '=', false]
+            ],
+            ['id'],
+            { limit: 1 }
+        );
+
+        const nowUtc = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+        if (openRecords.length > 0) {
+            // Clock OUT: update the open record
+            return this.client.callKw(ATTENDANCE_MODEL, 'write', [
+                [openRecords[0]!.id],
+                { check_out: nowUtc }
+            ]);
+        } else {
+            // Clock IN: create a new attendance record
+            return this.client.callKw(ATTENDANCE_MODEL, 'create', [
+                [{
+                    employee_id: action.employeeId,
+                    check_in: nowUtc
+                }]
+            ]);
+        }
     }
 
 }
