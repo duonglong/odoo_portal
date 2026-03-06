@@ -41,3 +41,10 @@ export type {
     ScreenComponent,
     DashboardWidget,
 } from './module.js';
+
+// Attendance & HR
+export type {
+    LeaveType,
+    LeaveAllocation,
+    Leave,
+} from './attendance.js';

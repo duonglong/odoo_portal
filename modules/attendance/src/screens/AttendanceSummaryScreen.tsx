@@ -12,6 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth, useOdooErrorToast, mapOdooError } from '@odoo-portal/core';
 import { useMyEmployee, useCheckInOut, useAttendanceRecords, useMonthAttendance } from '../hooks.js';
+import { useRouter } from 'expo-router';
 import type { AttendanceRecord } from '../types.js';
 
 import { fmtTime, fmtDate, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '@odoo-portal/core';
@@ -55,6 +56,7 @@ interface CalendarSidebarProps {
 }
 
 const CalendarSidebar = ({ currentMonthRecords, activeDate, onSelectDate, displayDate, setDisplayDate }: CalendarSidebarProps) => {
+    const router = useRouter();
     const today = new Date();
     const year = displayDate.getFullYear();
     const month = displayDate.getMonth(); // 0-indexed
@@ -184,7 +186,10 @@ const CalendarSidebar = ({ currentMonthRecords, activeDate, onSelectDate, displa
                 <Text className="text-xs text-slate-600 leading-relaxed mb-4">
                     Request time off or manage your vacation schedule directly from here.
                 </Text>
-                <TouchableOpacity className="w-full bg-primary-500 rounded-lg py-2 items-center active:bg-primary-600">
+                <TouchableOpacity
+                    onPress={() => router.push('/attendance/leave-request')}
+                    className="w-full bg-primary-500 rounded-lg py-2 items-center active:bg-primary-600"
+                >
                     <Text className="text-white text-xs font-bold">Go to Leaves</Text>
                 </TouchableOpacity>
             </View>

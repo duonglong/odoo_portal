@@ -59,6 +59,16 @@ export default function AppLayout() {
         { name: 'Settings', path: '/settings', icon: 'cog-outline' }
     ];
 
+    // Find the most specific active route to avoid double highlighting (e.g., /attendance and /attendance/leave-request)
+    const activeRoutePath = routes.reduce((bestMatch, route) => {
+        if (pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path + '/'))) {
+            if (!bestMatch || route.path.length > bestMatch.length) {
+                return route.path;
+            }
+        }
+        return bestMatch;
+    }, '');
+
     const SidebarContent = () => (
         <>
             <View className="flex-row items-center gap-3 px-4 py-6">
@@ -74,7 +84,8 @@ export default function AppLayout() {
             <ScrollView className="flex-1 px-4">
                 <View className="gap-2">
                     {routes.map((route) => {
-                        const isActive = pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path));
+                        // Fix double highlighting for paths like /attendance and /attendance/leave-request
+                        const isActive = route.path === activeRoutePath;
 
                         return (
                             <TouchableOpacity
@@ -133,7 +144,9 @@ export default function AppLayout() {
     const MobileTabBar = () => (
         <View className="flex-row items-center justify-around bg-white border-t border-slate-200 pb-safe pt-2 px-2 shadow-xl shadow-black/5">
             {routes.slice(0, 4).map((route) => {
-                const isActive = pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path));
+                // To prevent double highlights (e.g. /attendance vs /attendance/leave-request), 
+                // we exact-match or check if it's a true parent route rather than a sibling.
+                const isActive = route.path === activeRoutePath;
                 return (
                     <TouchableOpacity
                         key={route.path}
