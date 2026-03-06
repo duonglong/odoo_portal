@@ -27,3 +27,5 @@ export {
     mapFromOdoo,
     getOdooFields,
 } from '@odoo-portal/odoo-client';
+
+export * from './utils.js';

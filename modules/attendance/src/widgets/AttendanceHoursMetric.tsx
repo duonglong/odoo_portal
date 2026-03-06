@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { useAuth } from '@odoo-portal/core';
 import { useMyEmployee, useAttendanceRecords } from '../hooks.js';
-import { odooToDate } from '../utils.js';
+import { fmtTime, fmtDate, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '@odoo-portal/core';
 
 /**
  * Dashboard metric card: "Hours Today"

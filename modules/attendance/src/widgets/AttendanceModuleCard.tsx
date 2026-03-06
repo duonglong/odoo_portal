@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-na
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@odoo-portal/core';
 import { useMyEmployee, useAttendanceRecords, useCheckInOut } from '../hooks.js';
-import { fmtTime, odooToDate } from '../utils.js';
+import { fmtTime, fmtDate, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '@odoo-portal/core';
 
 /**
  * Dashboard module card for the Attendance module.

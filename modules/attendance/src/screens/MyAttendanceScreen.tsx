@@ -13,7 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@odoo-portal/core';
 import { useMyEmployee, useMonthAttendance } from '../hooks.js';
 import type { AttendanceRecord } from '../types.js';
-import { fmtTime, fmtDuration, odooToDate } from '../utils.js';
+import { fmtTime, fmtDate, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '@odoo-portal/core';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
