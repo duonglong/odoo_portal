@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth, mapOdooError } from '@odoo-portal/core';
 import { LeaveRepository } from '@odoo-portal/odoo-client';
-import { Alert } from 'react-native';
 
 const LEAVE_KEYS = {
     all: ['leaves'] as const,
@@ -64,10 +63,6 @@ export function useCreateLeave() {
         onSuccess: () => {
             // Invalidate balances and team leaves to refetch
             queryClient.invalidateQueries({ queryKey: LEAVE_KEYS.all });
-        },
-        onError: (error) => {
-            const toast = mapOdooError(error);
-            Alert.alert(toast?.title ?? 'Error', toast?.message ?? 'Could not submit leave request.');
         },
     });
 }

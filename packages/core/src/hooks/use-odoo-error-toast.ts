@@ -1,10 +1,4 @@
-import {
-    NetworkError,
-    SessionExpiredError,
-    AccessDeniedError,
-    RpcError,
-    OdooClientError,
-} from '@odoo-portal/odoo-client';
+import type { OdooClientError } from '@odoo-portal/odoo-client';
 
 export interface OdooErrorToast {
     title: string;
@@ -31,39 +25,36 @@ export interface OdooErrorToast {
 export function mapOdooError(error: unknown): OdooErrorToast | null {
     if (error == null) return null;
 
-    if (error instanceof NetworkError) {
-        return {
-            title: 'Connection Error',
-            message: 'Cannot reach the server. Check your internet connection.',
-        };
-    }
+    if (typeof error === 'object' && error !== null && 'name' in error) {
+        const errMap = error as { name: string; message?: string };
 
-    if (error instanceof SessionExpiredError) {
-        return {
-            title: 'Session Expired',
-            message: 'Your session has expired. Please log in again.',
-        };
-    }
-
-    if (error instanceof AccessDeniedError) {
-        return {
-            title: 'Access Denied',
-            message: error.message,
-        };
-    }
-
-    if (error instanceof RpcError) {
-        return {
-            title: 'Odoo Error',
-            message: error.message,
-        };
-    }
-
-    if (error instanceof OdooClientError) {
-        return {
-            title: 'Error',
-            message: error.message,
-        };
+        switch (errMap.name) {
+            case 'NetworkError':
+                return {
+                    title: 'Connection Error',
+                    message: 'Cannot reach the server. Check your internet connection.',
+                };
+            case 'SessionExpiredError':
+                return {
+                    title: 'Session Expired',
+                    message: 'Your session has expired. Please log in again.',
+                };
+            case 'AccessDeniedError':
+                return {
+                    title: 'Access Denied',
+                    message: errMap.message ?? 'Access Denied',
+                };
+            case 'RpcError':
+                return {
+                    title: 'Odoo Error',
+                    message: errMap.message ?? 'An RPC error occurred',
+                };
+            case 'OdooClientError':
+                return {
+                    title: 'Error',
+                    message: errMap.message ?? 'An Odoo client error occurred',
+                };
+        }
     }
 
     if (error instanceof Error) {
