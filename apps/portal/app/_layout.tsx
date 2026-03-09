@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
-import { OdooProvider, ModuleRegistry, useAuth, mapOdooError } from '@odoo-portal/core';
+import { OdooProvider, ModuleRegistry, useAuth, mapOdooError, toast, type ToastMessage } from '@odoo-portal/core';
 import { attendanceModule } from '@odoo-portal/attendance';
 import { platformSessionStorage } from '~/lib/storage';
 import { Platform } from 'react-native';
@@ -44,31 +44,15 @@ if (typeof document !== 'undefined') {
 ModuleRegistry.register(attendanceModule);
 
 // ── Custom Toast System ────────────────────────────
-type ToastMessage = ReturnType<typeof mapOdooError> & { id: string };
-
-const toastEmitter = {
-    listeners: new Set<(toast: ToastMessage) => void>(),
-    emit(toast: ReturnType<typeof mapOdooError>) {
-        if (!toast) return;
-        const message = { ...toast, id: Math.random().toString(36).substring(7) };
-        this.listeners.forEach((listener) => listener(message));
-    },
-    subscribe(listener: (toast: ToastMessage) => void) {
-        this.listeners.add(listener);
-        return () => {
-            this.listeners.delete(listener);
-        };
-    }
-};
 
 function GlobalToastContainer() {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
     useEffect(() => {
-        return toastEmitter.subscribe((toast) => {
-            setToasts((prev) => [...prev, toast]);
+        return toast.subscribe((t) => {
+            setToasts((prev) => [...prev, t]);
             setTimeout(() => {
-                setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+                setToasts((prev) => prev.filter((item) => item.id !== t.id));
             }, 5000);
         });
     }, []);
@@ -86,49 +70,49 @@ function GlobalToastContainer() {
             ]}
             pointerEvents="box-none"
         >
-            {toasts.map((toast) => (
-                <View
-                    key={toast.id}
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'flex-start',
-                        gap: 16,
-                        padding: 16,
-                        borderRadius: 12,
-                        backgroundColor: '#fef2f2', // bg-red-50 
-                        borderColor: '#fecaca', // border-red-200
-                        borderWidth: 1,
-                        width: '100%',
-                        shadowColor: '#991b1b',
-                        shadowOpacity: 0.1,
-                        shadowRadius: 10,
-                        shadowOffset: { width: 0, height: 4 },
-                        elevation: 5
-                    }}
-                >
-                    <View style={{ flexShrink: 0, backgroundColor: '#ef4444', borderRadius: 9999, height: 24, width: 24, alignItems: 'center', justifyContent: 'center' }}>
-                        <MaterialCommunityIcons name="close" size={14} color="white" />
+            {toasts.map((t) => {
+                const isSuccess = t.type === 'success';
+                return (
+                    <View
+                        key={t.id}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'flex-start',
+                            gap: 16,
+                            padding: 16,
+                            borderRadius: 12,
+                            backgroundColor: isSuccess ? '#ecfdf5' : '#fef2f2',
+                            borderColor: isSuccess ? '#a7f3d0' : '#fecaca',
+                            borderWidth: 1,
+                            width: '100%',
+                            shadowColor: isSuccess ? '#065f46' : '#991b1b',
+                            shadowOpacity: 0.1,
+                            shadowRadius: 10,
+                            shadowOffset: { width: 0, height: 4 },
+                            elevation: 5
+                        }}
+                    >
+                        <View style={{ flexShrink: 0, backgroundColor: isSuccess ? '#10b981' : '#ef4444', borderRadius: 9999, height: 24, width: 24, alignItems: 'center', justifyContent: 'center' }}>
+                            <MaterialCommunityIcons name={isSuccess ? "check" : "close"} size={14} color="white" />
+                        </View>
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                            <Text style={{ color: isSuccess ? '#064e3b' : '#991b1b', fontSize: 14, fontWeight: 'bold' }}>{t.title}</Text>
+                            <Text style={{ color: isSuccess ? '#047857' : '#b91c1c', fontSize: 12, marginTop: 2 }}>{t.message}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setToasts((prev) => prev.filter((item) => item.id !== t.id))} hitSlop={10}>
+                            <MaterialCommunityIcons name="close" size={20} color={isSuccess ? '#34d399' : '#f87171'} style={{ opacity: 0.8 }} />
+                        </TouchableOpacity>
                     </View>
-                    <View style={{ flex: 1, paddingRight: 8 }}>
-                        <Text style={{ color: '#991b1b', fontSize: 14, fontWeight: 'bold' }}>{toast.title}</Text>
-                        <Text style={{ color: '#b91c1c', fontSize: 12, marginTop: 2 }}>{toast.message}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))} hitSlop={10}>
-                        <MaterialCommunityIcons name="close" size={20} color="#f87171" style={{ opacity: 0.8 }} />
-                    </TouchableOpacity>
-                </View>
-            ))}
+                );
+            })}
         </View>
     );
 }
 
 // ── Global Error Handler ───────────────────────────
 function handleGlobalError(error: unknown) {
-    const odooToast = mapOdooError(error);
-    if (odooToast) {
-        console.error('Global Error Caught:', odooToast, error);
-        toastEmitter.emit(odooToast);
-    }
+    console.error('Global Error Caught:', error);
+    toast.odooError(error);
 }
 
 // ── TanStack Query client ──────────────────────────

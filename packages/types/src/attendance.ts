@@ -4,7 +4,6 @@ export interface LeaveType {
     id: number;
     name: string;
     requires_allocation: 'no' | 'yes';
-    color_name: string;
 }
 
 export interface LeaveAllocation {
@@ -20,6 +19,29 @@ export interface Leave {
     holiday_status_id: [number, string];
     request_date_from: string;
     request_date_to: string;
+    number_of_days: number;
     state: 'draft' | 'confirm' | 'refuse' | 'validate1' | 'validate';
     name: string;
+}
+
+// Domain Models (Clean, no Odoo fields)
+export interface LeaveBalance {
+    id: number;
+    typeId: number;
+    typeName: string;
+    maxLeaves: number;
+    leavesTaken: number;
+}
+
+export interface LeaveRequest {
+    id: number;
+    employeeId: number;
+    employeeName: string;
+    typeId: number;
+    typeName: string;
+    startDate: string;
+    endDate: string;
+    duration: number; // number_of_days
+    status: 'draft' | 'confirm' | 'refuse' | 'validate1' | 'validate';
+    description: string;
 }

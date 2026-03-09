@@ -1,71 +1,76 @@
-# Odoo Leave Request Integration Plan
+# Odoo Leave Management Integration Plan
 
-This document outlines the technical plan to integrate the new `LeaveRequestScreen` with the realtime Odoo backend.
+This document outlines the technical plan to implement the Leave Management feature, including the new `LeaveRequestListScreen` (from `screen_designs/leave_request_list.html`) and the existing `LeaveRequestScreen` (creation form), fully integrated with the Odoo backend.
 
-## 1. Odoo Models Involved
-To fully implement the UI, we need to interact with the following Odoo models:
-- `hr.leave`: The core model for leave requests. We will create new records here and fetch upcoming leaves for the "Who's Out" section.
-- `hr.leave.type`: Defines the categories of leave (e.g., Paid Time Off, Sick Leave). Used to populate the dropdown.
-- `hr.leave.allocation` / `hr.leave.report`: Used to calculate the employee's current leave balances (total allocated vs. used).
+## 1. UI Screens & Components
 
-## 2. Types Package (`@odoo-portal/types`)
-Update `packages/types/src/attendance.ts` (or create a new `leave.ts` file) to include interfaces:
+### 1.1 `LeaveRequestListScreen.tsx` (Overview & List)
+The main dashboard for leave management based on the provided HTML design.
+- **Header Actions**: Search input and "New Request" button.
+- **Balance Cards**: Displays visual summaries for "Paid Time Off", "Sick Leave", and "Unpaid Leave" balances with progress bars. Data is fetched via `useLeaveBalances()`.
+- **Filters**: Year selector and Status tabs (All Requests, Approved, Pending, Draft).
+- **Requests Table**: Displays the employee's historical and upcoming leave requests (Type, Description, Dates, Duration, Status, Actions). Adapts to smaller screens using NativeWind container queries or flex layouts.
+
+### 1.2 `LeaveRequestScreen.tsx` (Creation Form)
+The form to submit new requests.
+- **Leave Type Picker**: Dropdown populated by `useLeaveTypes()`.
+- **Date Range Picker**: Start and end dates.
+- **Description / Reason**: Text input.
+- **Who's Out Section**: Shows team members absent during the selected dates via `useTeamLeaves()`.
+
+## 2. Odoo Models Involved
+- `hr.leave`: The core model for leave requests. Used to fetch the user's requests for the list view, fetch team leaves, and create new requests.
+- `hr.leave.type`: Defines the categories of leave (e.g., Paid Time Off, Sick Leave).
+- `hr.leave.allocation` / `hr.leave.report`: Used to calculate the employee's current leave balances for the Balance Cards (total allocated vs. used).
+
+## 3. Types Package (`@odoo-portal/types`)
+Update `packages/types/src/attendance.ts` (or create `leave.ts`) with:
 
 ```typescript
 export interface LeaveType {
     id: number;
     name: string;
-    // other fields like color, requires_allocation, etc.
 }
 
 export interface LeaveAllocation {
     id: number;
-    holiday_status_id: [number, string];
-    max_leaves: number;
-    leaves_taken: number;
-    // Remaining = max_leaves - leaves_taken
+    holiday_status_id: [number, string]; // e.g. [1, "Paid Time Off"]
+    max_leaves: number; // Total days
+    leaves_taken: number; // Used days
 }
 
 export interface Leave {
     id: number;
     employee_id: [number, string];
-    holiday_status_id: [number, string];
+    holiday_status_id: [number, string]; // Leave Type
     request_date_from: string;
     request_date_to: string;
+    number_of_days: number; // Duration
     state: 'draft' | 'confirm' | 'refuse' | 'validate1' | 'validate';
     name: string; // Description
 }
 ```
 
-## 3. Odoo Client Repository (`@odoo-portal/odoo-client`)
-Create a new `LeaveRepository` (e.g., `packages/odoo-client/src/repositories/LeaveRepository.ts`) with the following methods:
+## 4. Odoo Client Repository (`@odoo-portal/odoo-client`)
+Create a `LeaveRepository` (`packages/odoo-client/src/repositories/LeaveRepository.ts`) with:
 
 - `getLeaveTypes()`: Fetch active `hr.leave.type` records.
-- `getMyBalances(employeeId: number)`: Fetch `hr.leave.allocation` grouped/summarized for the the user to display progress bars (Remaining / Total).
-- `getTeamUpcomingLeaves(departmentId: number)`: Fetch `hr.leave` where `state` is 'confirm' or 'validate' and dates overlap with the current/upcoming week, filtered by the user's department/team.
-- `createLeaveRequest(data)`: Perform a `create` RPC call on `hr.leave` with the selected type, dates, and description.
+- `getMyBalances(employeeId: number)`: Fetch `hr.leave.allocation` to calculate available and used days for the Balance Cards.
+- `getMyLeaveRequests(employeeId: number, filters?: LeaveFilters)`: Fetch `hr.leave` for the logged-in user to populate the Requests Table, safely paginated and filtered by status and year.
+- `getTeamUpcomingLeaves(departmentId: number)`: Fetch approved `hr.leave` records for team members to display in the "Who's Out" section of the form.
+- `createLeaveRequest(data)`: Perform a `create` RPC call on `hr.leave`.
 
-## 4. Attendance Module Hooks (`@odoo-portal/attendance`)
-Create new custom hooks in `modules/attendance/src/hooks/useLeave.ts` wrapping React Query:
+## 5. Attendance Module Hooks (`@odoo-portal/attendance`)
+Provide React Query hooks in `modules/attendance/src/hooks/useLeave.ts`:
 
-- `useLeaveTypes()`: `useQuery` mapped to `LeaveRepository.getLeaveTypes`.
-- `useLeaveBalances()`: `useQuery` mapped to `LeaveRepository.getMyBalances`.
-- `useTeamLeaves()`: `useQuery` mapped to `LeaveRepository.getTeamUpcomingLeaves`.
-- `useCreateLeave()`: `useMutation` that handles calling `LeaveRepository.createLeaveRequest()`, showing a success/error toast via `useOdooErrorToast`, and invalidating relevant queries upon success.
+- `useLeaveTypes()`: Wraps `LeaveRepository.getLeaveTypes`.
+- `useLeaveBalances()`: Wraps `LeaveRepository.getMyBalances`.
+- `useMyLeaveRequests(filters)`: Wraps `LeaveRepository.getMyLeaveRequests`, supporting status tabs and pagination.
+- `useTeamLeaves()`: Wraps `LeaveRepository.getTeamUpcomingLeaves`.
+- `useCreateLeave()`: `useMutation` that handles calling `LeaveRepository.createLeaveRequest()`, showing a success/error toast, and invalidating `myLeaveRequests` and `leaveBalances` queries.
 
-## 5. UI Integration (`LeaveRequestScreen.tsx`)
-Map the newly created hooks to the static UI components:
-
-1. **Leave Balances Card**: Replace the hardcoded "12/20 days" with data from `useLeaveBalances()`. Show a loading skeleton while fetching.
-2. **Who's Out Card**: Replace the static avatars and names with data mapped from `useTeamLeaves()`.
-3. **Leave Form**:
-    - Populate the "Leave Type" picker using data from `useLeaveTypes()`.
-    - Local state `startDate`, `endDate`, `description`, `leaveTypeId`.
-    - On "Submit Request" click:
-        - Validate form (dates are valid, type is selected).
-        - Trigger the `useCreateLeave` mutation.
-        - Handle loading state on the button (`isDisabled`, `isLoading`).
-        - Reset the form or navigate back upon successful submission.
-
-## Conclusion
-This phased approach maintains the modular architecture of the codebase, ensuring data logic is kept out of the presentation layer, and relies heavily on structured RPC interactions and React Query for state management.
+## 6. Implementation Phasing
+1. **Repository & Hooks**: Implement `LeaveRepository.getMyLeaveRequests` and `useMyLeaveRequests` to support reading the data.
+2. **Balance Cards UI**: Build the responsive `LeaveBalanceCards` component and wire it to `useLeaveBalances`.
+3. **List Screen UI**: Build `LeaveRequestListScreen.tsx` with the status tabs, table layout (or card layout for mobile), and link it to `useMyLeaveRequests`.
+4. **Navigation**: Update Expo Routing to handle defaults and navigation between `LeaveRequestListScreen` (overview) and `LeaveRequestScreen` (new request form).

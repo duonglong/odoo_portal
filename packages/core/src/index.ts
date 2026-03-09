@@ -4,6 +4,7 @@ export { OdooProvider, useOdooContext } from './providers/index.js';
 // Hooks
 export { useAuth, useUserGroups, useOdooErrorToast, mapOdooError } from './hooks/index.js';
 export type { OdooErrorToast } from './hooks/index.js';
+export { toast, type ToastMessage } from './toast.js';
 
 // Module System
 export { ModuleRegistry, useModules } from './modules/index.js';

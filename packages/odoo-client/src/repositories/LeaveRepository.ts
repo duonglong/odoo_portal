@@ -11,7 +11,7 @@ export class LeaveRepository {
         return this.client.searchRead<LeaveType>(
             'hr.leave.type',
             [['requires_allocation', 'in', ['yes', 'no']]], // Basic domain to get viable types
-            ['id', 'name', 'requires_allocation', 'color_name']
+            ['id', 'name', 'requires_allocation']
         );
     }
 
@@ -30,6 +30,25 @@ export class LeaveRepository {
                 ['state', '=', 'validate']
             ],
             ['id', 'holiday_status_id', 'max_leaves', 'leaves_taken']
+        );
+    }
+
+    /**
+     * Fetch the user's personal upcoming/current scheduled leaves.
+     */
+    async getMyUpcomingLeaves(employeeId: number): Promise<Leave[]> {
+        if (!employeeId) return [];
+        const today = new Date().toISOString().split('T')[0];
+
+        return this.client.searchRead<Leave>(
+            'hr.leave',
+            [
+                ['employee_id', '=', employeeId],
+                ['state', 'in', ['draft', 'confirm', 'validate1', 'validate']],
+                ['request_date_to', '>=', today]
+            ],
+            ['id', 'employee_id', 'holiday_status_id', 'request_date_from', 'request_date_to', 'state', 'name'],
+            { limit: 10, order: 'request_date_from ASC' }
         );
     }
 
@@ -66,11 +85,24 @@ export class LeaveRepository {
         request_date_from: string;
         request_date_to: string;
         name: string;
+        employee_id?: number;
     }): Promise<number> {
         return this.client.callKw<number>(
             'hr.leave',
             'create',
             [data],
+            {}
+        );
+    }
+
+    /**
+     * Delete an existing leave request (e.g., if draft or pending).
+     */
+    async deleteLeaveRequest(leaveId: number): Promise<boolean> {
+        return this.client.callKw<boolean>(
+            'hr.leave',
+            'unlink',
+            [[leaveId]],
             {}
         );
     }

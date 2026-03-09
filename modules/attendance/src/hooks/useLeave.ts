@@ -6,6 +6,7 @@ const LEAVE_KEYS = {
     all: ['leaves'] as const,
     types: () => [...LEAVE_KEYS.all, 'types'] as const,
     balances: (employeeId?: number) => [...LEAVE_KEYS.all, 'balances', employeeId] as const,
+    myUpcoming: (employeeId?: number) => [...LEAVE_KEYS.all, 'upcoming', employeeId] as const,
     teamUpcoming: () => [...LEAVE_KEYS.all, 'team', 'upcoming'] as const,
 };
 
@@ -49,6 +50,16 @@ export function useTeamLeaves() {
     });
 }
 
+export function useMyUpcomingLeaves(employeeId?: number) {
+    const repo = useLeaveRepository();
+
+    return useQuery({
+        queryKey: LEAVE_KEYS.myUpcoming(employeeId),
+        queryFn: () => repo.getMyUpcomingLeaves(employeeId!),
+        enabled: !!employeeId,
+    });
+}
+
 export function useCreateLeave() {
     const repo = useLeaveRepository();
     const queryClient = useQueryClient();
@@ -59,10 +70,25 @@ export function useCreateLeave() {
             request_date_from: string;
             request_date_to: string;
             name: string;
+            employee_id?: number;
         }) => repo.createLeaveRequest(data),
         onSuccess: () => {
             // Invalidate balances and team leaves to refetch
             queryClient.invalidateQueries({ queryKey: LEAVE_KEYS.all });
         },
+    });
+}
+
+export function useDeleteLeave() {
+    const repo = useLeaveRepository();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (leaveId: number) => repo.deleteLeaveRequest(leaveId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: LEAVE_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'my_leave_requests'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'leave_balances'] });
+        }
     });
 }

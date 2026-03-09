@@ -1,4 +1,6 @@
-import type { OdooMany2One } from '@odoo-portal/types';
+import type { LeaveRequest, LeaveBalance } from '@odoo-portal/types';
+
+export type { LeaveRequest, LeaveBalance };
 
 /**
  * Domain type for an attendance record (hr.attendance).

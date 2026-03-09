@@ -2,21 +2,30 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useLeaveTypes, useLeaveBalances, useTeamLeaves, useCreateLeave } from '../hooks/useLeave.js';
+import { useQueryClient } from '@tanstack/react-query';
+import { useLeaveTypes, useLeaveBalances, useTeamLeaves, useCreateLeave, useMyUpcomingLeaves } from '../hooks/useLeave.js';
+import { useAuth, toast } from '@odoo-portal/core';
+import { useMyEmployee } from '../hooks.js';
+import { DatePicker } from '../components/DatePicker.js';
 
 export default function LeaveRequestScreen() {
     const router = useRouter();
+    const { session, client } = useAuth();
+    const { data: employee } = useMyEmployee(client, session?.uid);
+    const queryClient = useQueryClient();
 
     // Queries
     const { data: leaveTypes, isLoading: loadingTypes } = useLeaveTypes();
     const { data: balances, isLoading: loadingBalances } = useLeaveBalances();
     const { data: teamLeaves, isLoading: loadingTeam } = useTeamLeaves();
+    const { data: upcomingLeaves, isLoading: loadingUpcoming } = useMyUpcomingLeaves(employee?.id);
 
     // Mutations
     const { mutate: createLeave, isPending: submitting } = useCreateLeave();
 
     // Form State
     const [leaveTypeId, setLeaveTypeId] = useState<number | null>(null);
+    const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]!);
     const [endDate, setEndDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]!);
     const [description, setDescription] = useState('');
@@ -29,11 +38,17 @@ export default function LeaveRequestScreen() {
                 holiday_status_id: leaveTypeId,
                 request_date_from: startDate,
                 request_date_to: endDate,
-                name: description
+                name: description,
+                employee_id: employee?.id
             },
             {
                 onSuccess: () => {
-                    router.back();
+                    queryClient.invalidateQueries({ queryKey: ['myLeaveBalances'] });
+                    queryClient.invalidateQueries({ queryKey: ['teamLeaves'] });
+                    queryClient.invalidateQueries({ queryKey: ['myUpcomingLeaves'] });
+                    queryClient.invalidateQueries({ queryKey: ['myLeaveRequests'] });
+                    toast.success('Request Submitted', 'Your leave request has been successfully created.');
+                    router.replace('/attendance/leave-list');
                 }
             }
         );
@@ -83,29 +98,44 @@ export default function LeaveRequestScreen() {
                                 {/* Form Fields */}
                                 <View className="flex-col gap-6">
                                     {/* Leave Type */}
-                                    <View>
+                                    <View style={{ zIndex: 50 }}>
                                         <Text className="text-sm font-semibold text-slate-700 mb-2">Leave Type</Text>
                                         {loadingTypes ? (
                                             <ActivityIndicator size="small" color="#94a3b8" />
                                         ) : (
-                                            <TouchableOpacity
-                                                className="h-12 border border-slate-200 rounded-lg bg-white justify-center px-4 relative active:bg-slate-50"
-                                                onPress={() => {
-                                                    // Cycle through types for demo purposes if no native picker
-                                                    if (leaveTypes && leaveTypes.length > 0) {
-                                                        const currentIndex = leaveTypes.findIndex(t => t.id === leaveTypeId);
-                                                        const nextIndex = (currentIndex + 1) % leaveTypes.length;
-                                                        setLeaveTypeId(leaveTypes[nextIndex]!.id);
-                                                    }
-                                                }}
-                                            >
-                                                <Text className="text-slate-900 text-base">
-                                                    {selectedLeaveType?.name || 'Select a Leave Type'}
-                                                </Text>
-                                                <View className="absolute right-4 top-3">
-                                                    <MaterialCommunityIcons name="chevron-down" size={24} color="#94a3b8" />
-                                                </View>
-                                            </TouchableOpacity>
+                                            <View className="relative z-50">
+                                                <TouchableOpacity
+                                                    className={`h-12 border ${isTypeDropdownOpen ? 'border-primary-400 ring-2 ring-primary-100' : 'border-slate-200'} rounded-lg bg-white flex-row items-center justify-between px-4 active:bg-slate-50`}
+                                                    onPress={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+                                                >
+                                                    <Text className="text-slate-900 text-base">
+                                                        {selectedLeaveType?.name || 'Select a Leave Type'}
+                                                    </Text>
+                                                    <MaterialCommunityIcons name={isTypeDropdownOpen ? "chevron-up" : "chevron-down"} size={24} color="#94a3b8" />
+                                                </TouchableOpacity>
+
+                                                {isTypeDropdownOpen && leaveTypes && leaveTypes.length > 0 && (
+                                                    <View className="absolute top-14 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden" style={{ elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 }}>
+                                                        {leaveTypes.map((type, index) => (
+                                                            <TouchableOpacity
+                                                                key={type.id}
+                                                                className={`p-4 flex-row items-center justify-between ${index !== leaveTypes.length - 1 ? 'border-b border-slate-100' : ''} ${leaveTypeId === type.id ? 'bg-primary-50' : 'bg-white'}`}
+                                                                onPress={() => {
+                                                                    setLeaveTypeId(type.id);
+                                                                    setIsTypeDropdownOpen(false);
+                                                                }}
+                                                            >
+                                                                <Text className={`text-base ${leaveTypeId === type.id ? 'text-primary-700 font-semibold' : 'text-slate-700'}`}>
+                                                                    {type.name}
+                                                                </Text>
+                                                                {leaveTypeId === type.id && (
+                                                                    <MaterialCommunityIcons name="check" size={20} color="#3713ec" />
+                                                                )}
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </View>
+                                                )}
+                                            </View>
                                         )}
                                     </View>
 
@@ -113,27 +143,28 @@ export default function LeaveRequestScreen() {
                                     <View className="flex-col md:flex-row gap-6">
                                         <View className="flex-1">
                                             <Text className="text-sm font-semibold text-slate-700 mb-2">Start Date</Text>
-                                            <View className="flex-row items-center h-12 border border-slate-200 rounded-lg bg-white px-3 relative">
-                                                <MaterialCommunityIcons name="calendar" size={20} color="#94a3b8" className="mr-2" />
-                                                <TextInput
-                                                    className="flex-1 text-slate-900 text-base h-full"
-                                                    value={startDate}
-                                                    onChangeText={setStartDate}
-                                                    placeholder="YYYY-MM-DD"
-                                                />
-                                            </View>
+                                            <DatePicker
+                                                value={startDate}
+                                                onChange={setStartDate}
+                                            >
+                                                <View className="flex-row items-center h-12 border border-slate-200 rounded-lg bg-white px-3">
+                                                    <MaterialCommunityIcons name="calendar" size={20} color="#94a3b8" className="mr-2" />
+                                                    <Text className="text-slate-900 text-base">{startDate || 'YYYY-MM-DD'}</Text>
+                                                </View>
+                                            </DatePicker>
                                         </View>
                                         <View className="flex-1">
                                             <Text className="text-sm font-semibold text-slate-700 mb-2">End Date</Text>
-                                            <View className="flex-row items-center h-12 border border-slate-200 rounded-lg bg-white px-3 relative">
-                                                <MaterialCommunityIcons name="calendar" size={20} color="#94a3b8" className="mr-2" />
-                                                <TextInput
-                                                    className="flex-1 text-slate-900 text-base h-full"
-                                                    value={endDate}
-                                                    onChangeText={setEndDate}
-                                                    placeholder="YYYY-MM-DD"
-                                                />
-                                            </View>
+                                            <DatePicker
+                                                value={endDate}
+                                                onChange={setEndDate}
+                                                minimumDate={new Date(startDate)} // Ensure End isn't strictly before Start in JS memory
+                                            >
+                                                <View className="flex-row items-center h-12 border border-slate-200 rounded-lg bg-white px-3">
+                                                    <MaterialCommunityIcons name="calendar" size={20} color="#94a3b8" className="mr-2" />
+                                                    <Text className="text-slate-900 text-base">{endDate || 'YYYY-MM-DD'}</Text>
+                                                </View>
+                                            </DatePicker>
                                         </View>
                                     </View>
 
@@ -223,7 +254,63 @@ export default function LeaveRequestScreen() {
                                 </View>
                             </View>
 
-                            {/* Card 2: Team Calendar */}
+                            {/* Card 2: My Schedule */}
+                            <View className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                                <View className="flex-row items-center gap-2 mb-6">
+                                    <MaterialCommunityIcons name="calendar-month" size={24} color="#3713ec" />
+                                    <Text className="text-base font-bold text-slate-900">My Schedule</Text>
+                                </View>
+
+                                <View className="flex-col gap-5">
+                                    {loadingUpcoming ? (
+                                        <ActivityIndicator size="small" color="#94a3b8" className="py-4" />
+                                    ) : (!upcomingLeaves || upcomingLeaves.length === 0) ? (
+                                        <Text className="text-sm text-slate-500 py-2">No upcoming scheduled leaves.</Text>
+                                    ) : (
+                                        upcomingLeaves.map(leave => {
+                                            let statusColor = 'bg-slate-100';
+                                            let statusTextColor = 'text-slate-600';
+                                            let statusLabel: string = leave.state;
+
+                                            switch (leave.state) {
+                                                case 'validate':
+                                                case 'validate1':
+                                                    statusColor = 'bg-indigo-100';
+                                                    statusTextColor = 'text-indigo-700';
+                                                    statusLabel = 'Approved';
+                                                    break;
+                                                case 'confirm':
+                                                    statusColor = 'bg-amber-100';
+                                                    statusTextColor = 'text-amber-700';
+                                                    statusLabel = 'To Approve';
+                                                    break;
+                                                case 'draft':
+                                                    statusLabel = 'Draft';
+                                                    break;
+                                            }
+
+                                            return (
+                                                <View key={leave.id} className="flex-row items-center gap-3">
+                                                    <View className={`h-10 w-10 flex-row shrink-0 rounded-full ${statusColor} items-center justify-center`}>
+                                                        <MaterialCommunityIcons name="account" size={20} color={statusTextColor.replace('text-', '#')} style={{ opacity: 0.8 }} />
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <Text className="text-sm font-bold text-slate-900" numberOfLines={1}>{leave.name || leave.holiday_status_id?.[1]}</Text>
+                                                        <Text className="text-xs text-slate-500">
+                                                            {new Date(leave.request_date_from).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.request_date_to).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                        </Text>
+                                                    </View>
+                                                    <View className={`px-2 py-1 rounded ${statusColor}`}>
+                                                        <Text className={`text-[10px] font-bold uppercase tracking-wider ${statusTextColor}`}>{statusLabel}</Text>
+                                                    </View>
+                                                </View>
+                                            );
+                                        })
+                                    )}
+                                </View>
+                            </View>
+
+                            {/* Card 3: Team Calendar */}
                             <View className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                                 <View className="flex-row items-center gap-2 mb-6">
                                     <MaterialCommunityIcons name="account-group-outline" size={24} color="#3713ec" />

@@ -31,7 +31,7 @@ export const attendanceModule: ModuleRegistration = {
                 showInNav: false,
             },
             {
-                path: '/attendance/leave-request',
+                path: '/attendance/leave-list',
                 title: 'Leaves',
                 icon: 'calendar-multiselect-outline',
                 showInNav: true,
@@ -41,7 +41,8 @@ export const attendanceModule: ModuleRegistration = {
     loadScreens: async () => {
         const { default: HistoryScreen } = await import('./screens/HistoryScreen.js');
         const { default: LeaveRequestScreen } = await import('./screens/LeaveRequestScreen.js');
-        return { HistoryScreen, LeaveRequestScreen };
+        const { default: LeaveRequestListScreen } = await import('./screens/LeaveRequestListScreen.js');
+        return { HistoryScreen, LeaveRequestScreen, LeaveRequestListScreen };
     },
     dashboardWidgets: [
         {

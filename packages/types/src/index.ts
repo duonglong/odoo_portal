@@ -47,4 +47,6 @@ export type {
     LeaveType,
     LeaveAllocation,
     Leave,
+    LeaveRequest,
+    LeaveBalance,
 } from './attendance.js';

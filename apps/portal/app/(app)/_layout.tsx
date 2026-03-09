@@ -61,6 +61,13 @@ export default function AppLayout() {
 
     // Find the most specific active route to avoid double highlighting (e.g., /attendance and /attendance/leave-request)
     const activeRoutePath = routes.reduce((bestMatch, route) => {
+        // Special case: Since both /attendance/leave-list and /attendance/leave-request 
+        // belong to "Leaves", let's make sure the "Leaves" tab stays highlighted 
+        // when either is active. The route.path registered for Leaves is '/attendance/leave-list'.
+        if (pathname.startsWith('/attendance/leave')) {
+            return route.path === '/attendance/leave-list' ? route.path : bestMatch;
+        }
+
         if (pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path + '/'))) {
             if (!bestMatch || route.path.length > bestMatch.length) {
                 return route.path;
@@ -111,14 +118,7 @@ export default function AppLayout() {
                 </View>
             </ScrollView>
 
-            <View className="p-4 gap-4 mt-auto border-t border-slate-200">
-                <TouchableOpacity
-                    className="flex-row items-center justify-center gap-2 rounded-xl h-11 bg-primary shadow-sm shadow-primary/20"
-                >
-                    <MaterialCommunityIcons name="plus" size={20} color="white" />
-                    <Text className="text-white text-sm font-bold">New Request</Text>
-                </TouchableOpacity>
-
+            <View className="p-4 mt-auto border-t border-slate-200">
                 <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center gap-3 flex-1">
                         <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center">
