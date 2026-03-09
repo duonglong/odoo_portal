@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -299,6 +299,7 @@ export default function AttendanceSummaryScreen() {
 
     const [activeDate, setActiveDate] = useState<Date>(new Date());
     const [displayDate, setDisplayDate] = useState<Date>(() => new Date());
+    const scrollViewRef = useRef<ScrollView>(null);
 
     // Fetch records specifically for the calendar's display month
     const {
@@ -316,6 +317,16 @@ export default function AttendanceSummaryScreen() {
     const todayRecords = monthRecords
         .filter(r => odooToDate(r.checkIn)?.toDateString() === activeDate.toDateString())
         .sort((a, b) => (odooToDate(a.checkIn)?.getTime() ?? 0) - (odooToDate(b.checkIn)?.getTime() ?? 0));
+
+    // Auto-scroll to bottom of the timeline whenever a new record is added or checked out
+    useEffect(() => {
+        if (todayRecords.length > 0) {
+            // Slight delay ensures layout has calculated new height before scrolling
+            setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [todayRecords.length, isCheckedIn]);
 
     // Derive toast from current mutation state
     const checkInOutToast = useOdooErrorToast(checkInOut.error);
@@ -438,7 +449,12 @@ export default function AttendanceSummaryScreen() {
                                 </TouchableOpacity>
                             </View>
 
-                            <ScrollView className="max-h-[380px]" contentContainerClassName="p-8" showsVerticalScrollIndicator={true}>
+                            <ScrollView
+                                ref={scrollViewRef}
+                                className="max-h-[380px]"
+                                contentContainerClassName="p-8"
+                                showsVerticalScrollIndicator={true}
+                            >
                                 {todayRecords.length === 0 ? (
                                     <View className="items-center justify-center py-8 opacity-50">
                                         <MaterialCommunityIcons name="file-search-outline" size={48} color="#94a3b8" />

@@ -10,9 +10,9 @@ const QUERY_KEYS = {
         ['attendance', 'records', employeeId, page] as const,
     month: (employeeId: number, year: number, month: number) =>
         ['attendance', 'month', employeeId, year, month] as const,
-    leaveBalances: (employeeId: number) => 
+    leaveBalances: (employeeId: number) =>
         ['attendance', 'leave_balances', employeeId] as const,
-    myLeaveRequests: (employeeId: number, filters: LeaveFilters, page: number) => 
+    myLeaveRequests: (employeeId: number, filters: LeaveFilters, page: number) =>
         ['attendance', 'my_leave_requests', employeeId, filters, page] as const,
     teamLeaves: (departmentId: number) =>
         ['attendance', 'team_leaves', departmentId] as const,
@@ -94,6 +94,9 @@ export const useCheckInOut = (client: OdooClient | null, uid: number | undefined
             void queryClient.invalidateQueries({
                 queryKey: ['attendance', 'records'],
             });
+            void queryClient.invalidateQueries({
+                queryKey: ['attendance', 'month'],
+            });
         },
     });
 };
@@ -102,7 +105,7 @@ export const useCheckInOut = (client: OdooClient | null, uid: number | undefined
 
 export const useLeaveBalances = (client: OdooClient | null, employeeId: number | undefined) => {
     const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
-    
+
     return useQuery({
         queryKey: QUERY_KEYS.leaveBalances(employeeId ?? 0),
         queryFn: () => repo!.getLeaveBalances(employeeId!),
@@ -112,14 +115,14 @@ export const useLeaveBalances = (client: OdooClient | null, employeeId: number |
 };
 
 export const useMyLeaveRequests = (
-    client: OdooClient | null, 
-    employeeId: number | undefined, 
+    client: OdooClient | null,
+    employeeId: number | undefined,
     filters: LeaveFilters = {},
     page = 0,
     pageSize = 20
 ) => {
     const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
-    
+
     return useQuery({
         queryKey: QUERY_KEYS.myLeaveRequests(employeeId ?? 0, filters, page),
         queryFn: () => repo!.getMyLeaveRequests(employeeId!, filters, pageSize, page * pageSize),
@@ -130,7 +133,7 @@ export const useMyLeaveRequests = (
 
 export const useTeamLeaves = (client: OdooClient | null, departmentId: number | undefined) => {
     const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
-    
+
     return useQuery({
         queryKey: QUERY_KEYS.teamLeaves(departmentId ?? 0),
         queryFn: () => repo!.getTeamUpcomingLeaves(departmentId!),

@@ -1,0 +1,71 @@
+import { View, Text, Pressable } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import type { LeaveFilters as BaseFilters } from '../repository.js';
+
+export type LeaveFiltersValue = BaseFilters;
+
+interface Props {
+    filters: LeaveFiltersValue;
+    onChange: (filters: LeaveFiltersValue) => void;
+}
+
+export function LeaveFilters({ filters, onChange }: Props) {
+    const router = useRouter();
+
+    const tabs = [
+        { id: 'all', label: 'All Requests' },
+        { id: 'approved', label: 'Approved' },
+        { id: 'pending', label: 'Pending' },
+        { id: 'draft', label: 'Draft' },
+    ];
+
+    const currentStatus = filters.status || 'all';
+    const currentYear = filters.year || new Date().getFullYear();
+
+    return (
+        <View className="flex flex-col gap-4">
+            <View className="flex flex-row justify-between items-end gap-2 px-2 sm:px-0">
+                <View>
+                    <Text className="text-slate-900  text-3xl font-black tracking-tight">Leave Management</Text>
+                    <Text className="text-slate-500  mt-1">Manage and track your time off requests and balances.</Text>
+                </View>
+                <View className="flex flex-row gap-3">
+                    <Pressable
+                        className="flex flex-row items-center gap-2 px-4 py-2 bg-primary rounded-lg shadow-sm"
+                        onPress={() => router.push('/attendance/leave-request' as never)}
+                    >
+                        <MaterialIcons name="add" size={18} className="text-white" />
+                        <Text className="text-sm font-bold text-white">New Request</Text>
+                    </Pressable>
+                    <Pressable className="flex flex-row items-center gap-2 px-4 py-2 bg-white  border border-slate-200  rounded-lg">
+                        <MaterialIcons name="filter-list" size={16} className="text-slate-700 " />
+                        <Text className="text-sm font-bold text-slate-700 ">Filter</Text>
+                    </Pressable>
+                    <Pressable className="flex flex-row items-center gap-2 px-4 py-2 bg-white  border border-slate-200  rounded-lg">
+                        <MaterialIcons name="calendar-today" size={16} className="text-slate-700 " />
+                        <Text className="text-sm font-bold text-slate-700 ">{currentYear}</Text>
+                        <MaterialIcons name="expand-more" size={16} className="text-slate-700 " />
+                    </Pressable>
+                </View>
+            </View>
+
+            <View className="flex flex-row gap-6 border-b border-slate-200  mt-2 px-2">
+                {tabs.map((tab) => {
+                    const isActive = currentStatus === tab.id;
+                    return (
+                        <Pressable
+                            key={tab.id}
+                            onPress={() => onChange({ ...filters, status: tab.id })}
+                            className={`pb-4 -mb-[1px] border-b-2 ${isActive ? 'border-[#7c5fb4]' : 'border-transparent'}`}
+                        >
+                            <Text className={`text-sm font-bold ${isActive ? 'text-[#7c5fb4]' : 'text-slate-500 '}`}>
+                                {tab.label}
+                            </Text>
+                        </Pressable>
+                    );
+                })}
+            </View>
+        </View>
+    );
+}
