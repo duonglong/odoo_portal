@@ -75,6 +75,8 @@ export function useCreateLeave() {
         onSuccess: () => {
             // Invalidate balances and team leaves to refetch
             queryClient.invalidateQueries({ queryKey: LEAVE_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'my_leave_requests'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance', 'leave_balances'] });
         },
     });
 }
