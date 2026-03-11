@@ -3,9 +3,15 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, Activity
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { useLeaveTypes, useLeaveBalances, useTeamLeaves, useCreateLeave, useMyUpcomingLeaves } from '../hooks/useLeave.js';
 import { useAuth, toast } from '@odoo-portal/core';
-import { useMyEmployee } from '../hooks.js';
+import {
+    useMyEmployee,
+    useLeaveTypes,
+    useLeaveBalances,
+    useTeamLeaves,
+    useCreateLeave,
+    useMyUpcomingLeaves
+} from '../hooks.js';
 import { DatePicker } from '../components/DatePicker.js';
 
 export default function LeaveRequestScreen() {
@@ -15,13 +21,13 @@ export default function LeaveRequestScreen() {
     const queryClient = useQueryClient();
 
     // Queries
-    const { data: leaveTypes, isLoading: loadingTypes } = useLeaveTypes();
-    const { data: balances, isLoading: loadingBalances } = useLeaveBalances();
-    const { data: teamLeaves, isLoading: loadingTeam } = useTeamLeaves();
-    const { data: upcomingLeaves, isLoading: loadingUpcoming } = useMyUpcomingLeaves(employee?.id);
+    const { data: leaveTypes, isLoading: loadingTypes } = useLeaveTypes(client);
+    const { data: balances, isLoading: loadingBalances } = useLeaveBalances(client, employee?.id);
+    const { data: teamLeaves, isLoading: loadingTeam } = useTeamLeaves(client, employee?.departmentId?.id);
+    const { data: upcomingLeaves, isLoading: loadingUpcoming } = useMyUpcomingLeaves(client, employee?.id);
 
     // Mutations
-    const { mutate: createLeave, isPending: submitting } = useCreateLeave();
+    const { mutate: createLeave, isPending: submitting } = useCreateLeave(client);
 
     // Form State
     const [leaveTypeId, setLeaveTypeId] = useState<number | null>(null);
@@ -43,10 +49,7 @@ export default function LeaveRequestScreen() {
             },
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: ['myLeaveBalances'] });
-                    queryClient.invalidateQueries({ queryKey: ['teamLeaves'] });
-                    queryClient.invalidateQueries({ queryKey: ['myUpcomingLeaves'] });
-                    queryClient.invalidateQueries({ queryKey: ['myLeaveRequests'] });
+                    queryClient.invalidateQueries({ queryKey: ['attendance'] });
                     toast.success('Request Submitted', 'Your leave request has been successfully created.');
                     router.replace('/attendance/leave-list');
                 }
@@ -228,20 +231,20 @@ export default function LeaveRequestScreen() {
                                         <Text className="text-sm text-slate-500 py-2">No leave balances found.</Text>
                                     ) : (
                                         balances.map(balance => {
-                                            const remaining = balance.max_leaves - balance.leaves_taken;
-                                            const percent = balance.max_leaves > 0 ? (balance.leaves_taken / balance.max_leaves) * 100 : 0;
+                                            const remaining = balance.maxLeaves - balance.leavesTaken;
+                                            const percent = balance.maxLeaves > 0 ? (balance.leavesTaken / balance.maxLeaves) * 100 : 0;
 
                                             // Provide some visual distinction. In reality, Odoo defines colors.
-                                            const bgColor = balance.max_leaves > 10 ? 'bg-primary-600' : 'bg-emerald-500';
+                                            const bgColor = balance.maxLeaves > 10 ? 'bg-primary-600' : 'bg-emerald-500';
 
                                             return (
                                                 <View key={balance.id}>
                                                     <View className="flex-row justify-between text-sm mb-2">
                                                         <Text className="text-slate-500 font-medium">
-                                                            {balance.holiday_status_id[1] || 'Time Off'}
+                                                            {balance.typeName || 'Time Off'}
                                                         </Text>
                                                         <Text className="font-bold text-slate-900">
-                                                            {remaining} / {balance.max_leaves} days
+                                                            {remaining} / {balance.maxLeaves} days
                                                         </Text>
                                                     </View>
                                                     <View className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -270,9 +273,9 @@ export default function LeaveRequestScreen() {
                                         upcomingLeaves.map(leave => {
                                             let statusColor = 'bg-slate-100';
                                             let statusTextColor = 'text-slate-600';
-                                            let statusLabel: string = leave.state;
+                                            let statusLabel: string = leave.status;
 
-                                            switch (leave.state) {
+                                            switch (leave.status) {
                                                 case 'validate':
                                                 case 'validate1':
                                                     statusColor = 'bg-indigo-100';
@@ -295,9 +298,9 @@ export default function LeaveRequestScreen() {
                                                         <MaterialCommunityIcons name="account" size={20} color={statusTextColor.replace('text-', '#')} style={{ opacity: 0.8 }} />
                                                     </View>
                                                     <View className="flex-1">
-                                                        <Text className="text-sm font-bold text-slate-900" numberOfLines={1}>{leave.name || leave.holiday_status_id?.[1]}</Text>
+                                                        <Text className="text-sm font-bold text-slate-900" numberOfLines={1}>{leave.description || leave.typeName}</Text>
                                                         <Text className="text-xs text-slate-500">
-                                                            {new Date(leave.request_date_from).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.request_date_to).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                            {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                         </Text>
                                                     </View>
                                                     <View className={`px-2 py-1 rounded ${statusColor}`}>
@@ -326,16 +329,16 @@ export default function LeaveRequestScreen() {
                                         teamLeaves.map(leave => (
                                             <View key={leave.id} className="flex-row items-center gap-3">
                                                 <View className="h-10 w-10 rounded-full bg-slate-200 items-center justify-center">
-                                                    <Text className="text-slate-500 font-bold uppercase">{leave.employee_id[1]?.charAt(0) || 'U'}</Text>
+                                                    <Text className="text-slate-500 font-bold uppercase">{leave.employeeName?.charAt(0) || 'U'}</Text>
                                                 </View>
                                                 <View className="flex-1">
-                                                    <Text className="text-sm font-bold text-slate-900" numberOfLines={1}>{leave.employee_id[1]}</Text>
+                                                    <Text className="text-sm font-bold text-slate-900" numberOfLines={1}>{leave.employeeName}</Text>
                                                     <Text className="text-xs text-slate-500">
-                                                        {leave.request_date_from} to {leave.request_date_to}
+                                                        {leave.startDate} to {leave.endDate}
                                                     </Text>
                                                 </View>
                                                 <View className="px-2 py-1 rounded bg-slate-100">
-                                                    <Text className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{leave.state}</Text>
+                                                    <Text className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{leave.status}</Text>
                                                 </View>
                                             </View>
                                         ))

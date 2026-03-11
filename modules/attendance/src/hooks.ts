@@ -16,6 +16,9 @@ const QUERY_KEYS = {
         ['attendance', 'my_leave_requests', employeeId, filters, page] as const,
     teamLeaves: (departmentId: number) =>
         ['attendance', 'team_leaves', departmentId] as const,
+    leaveTypes: () => ['attendance', 'leave_types'] as const,
+    myUpcomingLeaves: (employeeId: number) =>
+        ['attendance', 'my_upcoming_leaves', employeeId] as const,
 };
 
 /** Hook to get the current user's employee record */
@@ -142,12 +145,60 @@ export const useTeamLeaves = (client: OdooClient | null, departmentId: number | 
     });
 };
 
-export const useCreateLeave = (client: OdooClient | null, employeeId: number | undefined) => {
+export const useCreateLeave = (client: OdooClient | null) => {
     const queryClient = useQueryClient();
-    // Implementation deferred to UI integration phase.
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
     return useMutation({
-        mutationFn: async (data: Partial<LeaveRequest>) => {
-            throw new Error("Not implemented yet");
+        mutationFn: async (data: {
+            holiday_status_id: number;
+            request_date_from: string;
+            request_date_to: string;
+            name: string;
+            employee_id?: number;
+        }) => {
+            if (!repo) throw new Error('Not authenticated');
+            return repo.createLeaveRequest(data);
+        },
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ['attendance'] });
         }
     });
 }
+
+export const useLeaveTypes = (client: OdooClient | null) => {
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useQuery({
+        queryKey: QUERY_KEYS.leaveTypes(),
+        queryFn: () => repo!.getLeaveTypes(),
+        enabled: repo !== null,
+        staleTime: 1000 * 60 * 60, // 1 hour
+    });
+};
+
+export const useMyUpcomingLeaves = (client: OdooClient | null, employeeId: number | undefined) => {
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useQuery({
+        queryKey: QUERY_KEYS.myUpcomingLeaves(employeeId ?? 0),
+        queryFn: () => repo!.getMyUpcomingLeaves(employeeId!),
+        enabled: repo !== null && employeeId !== undefined,
+        staleTime: 1000 * 60 * 5,
+    });
+};
+
+export const useDeleteLeave = (client: OdooClient | null) => {
+    const queryClient = useQueryClient();
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useMutation({
+        mutationFn: async (leaveId: number) => {
+            if (!repo) throw new Error('Not authenticated');
+            return repo.deleteLeaveRequest(leaveId);
+        },
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        }
+    });
+};

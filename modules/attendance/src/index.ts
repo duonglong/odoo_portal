@@ -11,7 +11,7 @@ export { attendanceFieldMap, employeeFieldMap } from './mappings.js';
 export { AttendanceRepository } from './repository.js';
 
 // Hooks
-export { useMyEmployee, useAttendanceRecords, useMonthAttendance, useCheckInOut } from './hooks.js';
+export { useMyEmployee, useAttendanceRecords, useMonthAttendance, useCheckInOut, useCreateLeave, useLeaveTypes, useLeaveBalances, useTeamLeaves, useMyUpcomingLeaves, useDeleteLeave } from './hooks.js';
 
 // Screens
 export { default as HistoryScreen } from './screens/HistoryScreen.js';

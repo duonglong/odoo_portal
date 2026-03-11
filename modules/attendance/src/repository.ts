@@ -188,11 +188,11 @@ export class AttendanceRepository {
 
     /** Helper for Who's Out: Fetch team leaves overlapping the upcoming week */
     async getTeamUpcomingLeaves(departmentId: number): Promise<LeaveRequest[]> {
-        const todayStr = new Date().toISOString().slice(0,10) + ' 00:00:00';
-        
+        const todayStr = new Date().toISOString().slice(0, 10) + ' 00:00:00';
+
         let nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 14); // Next 14 days
-        const nextWeekStr = nextWeek.toISOString().slice(0,10) + ' 23:59:59';
+        const nextWeekStr = nextWeek.toISOString().slice(0, 10) + ' 23:59:59';
 
         const domain: OdooDomain = [
             ['department_id', '=', departmentId],
@@ -219,5 +219,61 @@ export class AttendanceRepository {
                 typeName: req.typeId?.name || '',
             } as LeaveRequest;
         });
+    }
+
+    /** Get all available leave types */
+    async getLeaveTypes(): Promise<Array<{ id: number, name: string }>> {
+        const raw = await this.client.searchRead<{ id: number; name: string }>(
+            'hr.leave.type',
+            [],
+            ['id', 'name']
+        );
+        return raw;
+    }
+
+    /** Get upcoming approved leaves for the specific employee */
+    async getMyUpcomingLeaves(employeeId: number): Promise<LeaveRequest[]> {
+        const todayStr = new Date().toISOString().slice(0, 10) + ' 00:00:00';
+
+        const domain: OdooDomain = [
+            ['employee_id', '=', employeeId],
+            ['state', '=', 'validate'],
+            ['request_date_from', '>=', todayStr],
+        ];
+
+        const fields = getOdooFields(leaveRequestFieldMap);
+        const raw = await this.client.searchRead<Record<string, unknown>>(
+            LEAVE_MODEL,
+            domain,
+            fields,
+            { limit: 20, order: 'request_date_from asc' }
+        );
+
+        return raw.map(r => {
+            const req = mapFromOdoo<any>(r, leaveRequestFieldMap);
+            return {
+                ...req,
+                employeeId: req.employeeId?.id || 0,
+                employeeName: req.employeeId?.name || '',
+                typeId: req.typeId?.id || 0,
+                typeName: req.typeId?.name || '',
+            } as LeaveRequest;
+        });
+    }
+
+    /** Submit a new leave request */
+    async createLeaveRequest(data: {
+        holiday_status_id: number;
+        request_date_from: string;
+        request_date_to: string;
+        name: string;
+        employee_id?: number;
+    }): Promise<number> {
+        return this.client.callKw<number>(LEAVE_MODEL, 'create', [data]);
+    }
+
+    /** Delete a leave request */
+    async deleteLeaveRequest(leaveId: number): Promise<boolean> {
+        return this.client.callKw<boolean>(LEAVE_MODEL, 'unlink', [[leaveId]]);
     }
 }

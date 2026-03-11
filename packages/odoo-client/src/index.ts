@@ -25,5 +25,4 @@ export {
     getOdooFields,
 } from './mappers/index.js';
 
-// Repositories
-export { LeaveRepository } from './repositories/LeaveRepository.js';
+// Repositories exported here when applicable

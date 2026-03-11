@@ -1,7 +1,7 @@
 import { View, Text, Pressable, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useDeleteLeave } from '../hooks/useLeave.js';
-import { toast } from '@odoo-portal/core';
+import { useDeleteLeave } from '../hooks.js';
+import { toast, useAuth } from '@odoo-portal/core';
 import type { LeaveRequest } from '../types.js';
 
 interface Props {
@@ -13,7 +13,8 @@ interface Props {
 }
 
 export function LeaveRequestTable({ requests, isLoading, page, setPage, hasMore }: Props) {
-    const { mutate: deleteLeave, isPending: isDeleting } = useDeleteLeave();
+    const { client } = useAuth();
+    const { mutate: deleteLeave, isPending: isDeleting } = useDeleteLeave(client);
 
     const handleDelete = (id: number) => {
         if (Platform.OS === 'web') {
