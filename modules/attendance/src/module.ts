@@ -1,4 +1,4 @@
-import type { ModuleRegistration } from '@odoo-portal/types';
+import type { ModuleRegistration } from '@odoo-portal/core';
 import AttendanceHoursMetric from './widgets/AttendanceHoursMetric.js';
 import AttendanceModuleCard from './widgets/AttendanceModuleCard.js';
 

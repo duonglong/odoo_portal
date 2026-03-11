@@ -9,17 +9,8 @@ export { toast, type ToastMessage } from './toast.js';
 // Module System
 export { ModuleRegistry, useModules } from './modules/index.js';
 
-// Re-export essentials from lower packages
-export type {
-    OdooConnectionConfig,
-    AuthCredentials,
-    OdooSession,
-    OdooDomain,
-    SearchOptions,
-    PortalModule,
-    PortalRouteConfig,
-    ModuleRegistration,
-} from '@odoo-portal/types';
+// Internal Type Exports
+export type * from './types/module.js';
 
 export {
     OdooClient,

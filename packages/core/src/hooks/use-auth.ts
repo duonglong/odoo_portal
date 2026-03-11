@@ -3,7 +3,7 @@ import type {
     OdooConnectionConfig,
     AuthCredentials,
     OdooSession,
-} from '@odoo-portal/types';
+} from '@odoo-portal/odoo-client';
 import { OdooClient, AuthenticationError } from '@odoo-portal/odoo-client';
 import { useOdooContext } from '../providers/odoo-provider.js';
 

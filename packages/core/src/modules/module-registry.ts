@@ -1,4 +1,4 @@
-import type { ModuleRegistration } from '@odoo-portal/types';
+import type { ModuleRegistration } from '@odoo-portal/core';
 
 /**
  * Registry for portal feature modules.

@@ -1,4 +1,4 @@
-import type { FieldMap } from '@odoo-portal/types';
+import type { FieldMap } from '@odoo-portal/odoo-client';
 
 /**
  * Field mapping: hr.attendance

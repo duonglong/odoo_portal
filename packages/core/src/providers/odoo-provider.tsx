@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
 import { OdooClient, type OdooClientOptions } from '@odoo-portal/odoo-client';
-import type { OdooConnectionConfig, OdooSession } from '@odoo-portal/types';
+import type { OdooConnectionConfig, OdooSession } from '@odoo-portal/odoo-client';
 
 interface OdooContextValue {
     /** Get or create an OdooClient for the given connection */

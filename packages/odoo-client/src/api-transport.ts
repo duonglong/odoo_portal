@@ -1,4 +1,4 @@
-import type { JsonRpcRequest, JsonRpcResponse } from '@odoo-portal/types';
+import type { JsonRpcRequest, JsonRpcResponse } from '@odoo-portal/odoo-client';
 import { NetworkError, AccessDeniedError, RpcError, SessionExpiredError } from './errors.js';
 
 /**
@@ -137,9 +137,7 @@ export class ApiTransport {
         return json.result as T;
     }
 
-    // setSessionId is a no-op for the proxy transport —
-    // session management is entirely server-side.
-    setSessionId(_sessionId: string | null): void { /* noop */ }
+
 
     getBaseUrl(): string {
         return this.proxyUrl;

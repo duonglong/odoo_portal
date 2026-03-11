@@ -1,5 +1,5 @@
 import { OdooClient, ApiTransport } from '@odoo-portal/odoo-client';
-import type { OdooConnectionConfig } from '@odoo-portal/types';
+import type { OdooConnectionConfig } from '@odoo-portal/odoo-client';
 import { platformSessionStorage } from './storage.js';
 
 /**

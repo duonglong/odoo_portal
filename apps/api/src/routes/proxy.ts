@@ -53,7 +53,7 @@ proxyRouter.post('/jsonrpc', async (c) => {
     const rpcBody = {
         jsonrpc: '2.0',
         method: 'call',
-        id: Date.now(),
+        id: crypto.randomUUID(),
         params: {
             service: 'object',
             method: 'execute_kw',
@@ -85,8 +85,21 @@ proxyRouter.post('/jsonrpc', async (c) => {
         return c.json({ error: `Failed to reach Odoo: ${String(err)}` }, 502);
     }
 
-    // Stream the Odoo response body back to the client as-is
-    const responseBody = await odooResponse.text();
+    // Stream the Odoo response body back to the client, but sanitize it first
+    let responseBody = await odooResponse.text();
+    try {
+        const json = JSON.parse(responseBody);
+        // Odoo XML-RPC errors often echo back the arguments passed. 
+        // We must prevent our proxy-injected password from leaking to the frontend.
+        if (json.error?.data?.arguments && Array.isArray(json.error.data.arguments)) {
+            json.error.data.arguments = json.error.data.arguments.map((arg: any) =>
+                arg === session.password ? '***SANITIZED***' : arg
+            );
+            responseBody = JSON.stringify(json);
+        }
+    } catch {
+        // Ignore parsing errors, return raw text
+    }
 
     return c.text(responseBody, odooResponse.status as 200, {
         'Content-Type': 'application/json',

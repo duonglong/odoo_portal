@@ -25,4 +25,8 @@ export {
     getOdooFields,
 } from './mappers/index.js';
 
-// Repositories exported here when applicable
+// Types
+export type * from './types/domain.js';
+export type * from './types/model.js';
+export type * from './types/rpc.js';
+export type * from './types/connection.js';

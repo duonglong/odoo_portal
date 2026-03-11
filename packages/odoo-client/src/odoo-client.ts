@@ -2,10 +2,9 @@ import type {
     OdooConnectionConfig,
     AuthCredentials,
     OdooSession,
-    OdooDomain,
-    SearchOptions,
-    AuthenticateResult,
-} from '@odoo-portal/types';
+} from './types/connection.js';
+import type { OdooDomain, SearchOptions } from './types/domain.js';
+import type { AuthenticateResult } from './types/rpc.js';
 
 
 import { ApiTransport } from './api-transport.js';
@@ -92,6 +91,10 @@ export class OdooClient {
         if (!saved) return null;
 
         this.session = saved;
+
+        if (!this.session) {
+            return null;
+        }
 
         // Wire up the JWT for the ApiTransport
         if (!this.session.proxyJwt) {

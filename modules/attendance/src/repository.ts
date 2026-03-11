@@ -1,8 +1,13 @@
 import type { OdooClient } from '@odoo-portal/odoo-client';
 import { mapFromOdoo, getOdooFields } from '@odoo-portal/odoo-client';
-import type { OdooDomain } from '@odoo-portal/types';
+import type { OdooDomain } from '@odoo-portal/odoo-client';
 import type { AttendanceRecord, Employee, AttendanceAction, LeaveRequest, LeaveBalance } from './types.js';
 import { attendanceFieldMap, employeeFieldMap, leaveRequestFieldMap, leaveAllocationFieldMap } from './mappings.js';
+
+type MappedLeave = Omit<LeaveRequest, 'employeeId' | 'employeeName' | 'typeId' | 'typeName'> & {
+    employeeId?: { id: number, name: string };
+    typeId?: { id: number, name: string };
+};
 
 const ATTENDANCE_MODEL = 'hr.attendance';
 const EMPLOYEE_MODEL = 'hr.employee';
@@ -175,7 +180,7 @@ export class AttendanceRepository {
         );
 
         return raw.map(r => {
-            const req = mapFromOdoo<any>(r, leaveRequestFieldMap);
+            const req = mapFromOdoo<MappedLeave>(r, leaveRequestFieldMap);
             return {
                 ...req,
                 employeeId: req.employeeId?.id || 0,
@@ -210,7 +215,7 @@ export class AttendanceRepository {
         );
 
         return raw.map(r => {
-            const req = mapFromOdoo<any>(r, leaveRequestFieldMap);
+            const req = mapFromOdoo<MappedLeave>(r, leaveRequestFieldMap);
             return {
                 ...req,
                 employeeId: req.employeeId?.id || 0,
@@ -250,7 +255,7 @@ export class AttendanceRepository {
         );
 
         return raw.map(r => {
-            const req = mapFromOdoo<any>(r, leaveRequestFieldMap);
+            const req = mapFromOdoo<MappedLeave>(r, leaveRequestFieldMap);
             return {
                 ...req,
                 employeeId: req.employeeId?.id || 0,

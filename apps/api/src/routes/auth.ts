@@ -38,7 +38,7 @@ authRouter.post('/login', async (c) => {
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'call',
-                id: Date.now(),
+                id: crypto.randomUUID(),
                 params: {
                     service: 'common',
                     method: 'authenticate',
@@ -77,7 +77,7 @@ authRouter.post('/login', async (c) => {
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'call',
-                id: Date.now(),
+                id: crypto.randomUUID(),
                 params: {
                     service: 'object',
                     method: 'execute_kw',
