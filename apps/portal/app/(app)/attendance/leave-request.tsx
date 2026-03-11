@@ -1,1 +1,3 @@
-export { LeaveRequestScreen as default } from '@odoo-portal/attendance';
+import { LeaveRequestScreen } from '@odoo-portal/attendance';
+
+export default LeaveRequestScreen;

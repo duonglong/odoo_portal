@@ -73,13 +73,13 @@ To build standalone standalone apps (`.apk`, `.aab`, or `.ipa`) for devices, you
 │       (Self-contained feature — see Module Guide)    │
 ├─────────────────────────────────────────────────────┤
 │               packages/core (React layer)            │
-│  OdooProvider · useAuth · useOdooQuery · ModuleRegistry│
+│  OdooProvider · useAuth · toast · ModuleRegistry     │
 ├─────────────────────────────────────────────────────┤
 │             packages/odoo-client (protocol)          │
 │    JSON-RPC transport · OdooClient · Field Mapper    │
 ├─────────────────────────────────────────────────────┤
 │             packages/types (contracts)               │
-│  OdooSession · FieldMap · PortalModule · Repository  │
+│  OdooSession · FieldMap · PortalModule               │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -140,7 +140,7 @@ Thin React wrappers around the repository using **TanStack Query**. They add:
 // modules/attendance/src/hooks.ts
 export const useAttendanceRecords = (client, employeeId) =>
     useQuery({
-        queryKey: ['attendance', employeeId],
+        queryKey: ['attendance', 'records', employeeId],
         queryFn: () => new AttendanceRepository(client).getTodayAttendance(employeeId),
     });
 ```
@@ -166,7 +166,6 @@ odoo_portal/
 │   ├── types/              ← Shared TypeScript interfaces (no runtime deps)
 │   ├── odoo-client/        ← JSON-RPC + BFF proxy client, auth, CRUD, field mapper
 │   └── core/               ← React providers, hooks, module registry, connection store
-│                              (pure logic — no UI components)
 ├── modules/
 │   └── attendance/         ← Attendance feature module
 │       └── src/
@@ -436,31 +435,6 @@ interface ModuleRegistration {
 ```
 
 ---
-
-## Data Flow
-
-```
-User taps "Clock In / Clock Out"
-       │
-       ▼
-AttendanceSummaryScreen (React)
-  └─ useCheckInOut()                        ← TanStack Query mutation hook
-       └─ AttendanceRepository.checkInOut()
-            ├─ .getKioskToken()             ← searchRead('res.company', ['attendance_kiosk_key'])
-            └─ OdooClient.callRoute('/hr_attendance/manual_selection', { token, employee_id })
-                 └─ JsonRpcTransport.call() ← POST JSON-RPC 2.0
-                      └─ Odoo controller calls employee._attendance_action_change()
-       │
-       ▼ on success
-TanStack Query invalidates ['attendance', 'employee'] + ['attendance', 'records']
-       │
-       ▼
-Screen re-renders with updated attendance state
-```
-
-> **Note:** The old `hr.employee.attendance_manual` ORM method was removed in Odoo 17+.
-> The correct Odoo 19 API is the `/hr_attendance/manual_selection` HTTP controller route,
-> called via `OdooClient.callRoute()` (not `callKw`).
 
 ---
 
