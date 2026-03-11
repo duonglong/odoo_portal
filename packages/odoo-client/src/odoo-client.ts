@@ -4,7 +4,7 @@ import type {
     OdooSession,
 } from './types/connection.js';
 import type { OdooDomain, SearchOptions } from './types/domain.js';
-import type { AuthenticateResult } from './types/rpc.js';
+import type { AuthenticateResult } from './types/rpc.js';   
 
 
 import { ApiTransport } from './api-transport.js';
