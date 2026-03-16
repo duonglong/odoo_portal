@@ -1,5 +1,6 @@
 # Odoo Portal Framework
 
+
 A modular, cross-platform portal for **Odoo 19** built with Expo, TypeScript, and a plug-in module architecture.
 
 > **Status:** Foundation, core React layer, and the attendance module are implemented and type-checked. The attendance module includes a daily-log timeline, a monthly calendar view, a history screen, and a working clock-in / clock-out integration with Odoo 19.
