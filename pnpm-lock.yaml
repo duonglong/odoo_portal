@@ -67,6 +67,9 @@ importers:
       '@odoo-portal/odoo-client':
         specifier: workspace:*
         version: link:../../packages/odoo-client
+      '@odoo-portal/payslip':
+        specifier: workspace:*
+        version: link:../../modules/payslip
       '@react-native-async-storage/async-storage':
         specifier: ^2.1.0
         version: 2.2.0(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))
@@ -149,6 +152,43 @@ importers:
       '@react-native-community/datetimepicker':
         specifier: 8.2.0
         version: 8.2.0(expo@52.0.49)(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))(react@19.2.4)
+      '@tanstack/react-query':
+        specifier: ^5.67.0
+        version: 5.90.21(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      expo-router:
+        specifier: ~4.0.0
+        version: 4.0.22(5ogyz3fa5l7ja47tmh3vzmn4nm)
+      nativewind:
+        specifier: ^4.1.0
+        version: 4.2.2(react-native-reanimated@4.2.2(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))(react@19.2.4))(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))(react@19.2.4))(react-native-safe-area-context@5.7.0(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))(react@19.2.4))(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))(react@19.2.4)(tailwindcss@3.4.19(tsx@4.21.0))
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-native:
+        specifier: 0.76.7
+        version: 0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4)
+      tailwindcss:
+        specifier: ^3.4.0
+        version: 3.4.19(tsx@4.21.0)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  modules/payslip:
+    dependencies:
+      '@expo/vector-icons':
+        specifier: ^15.1.1
+        version: 15.1.1(expo-font@55.0.4(expo@52.0.49)(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))(react@19.2.4))(react-native@0.76.7(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.4))(react@19.2.4)
+      '@odoo-portal/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@odoo-portal/odoo-client':
+        specifier: workspace:*
+        version: link:../../packages/odoo-client
       '@tanstack/react-query':
         specifier: ^5.67.0
         version: 5.90.21(react@19.2.4)

@@ -1,17 +1,15 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { OdooClient } from '@odoo-portal/odoo-client';
+import { ModuleRegistry } from '../modules/module-registry.js';
 
 /**
- * Fetches the current user's Odoo group XML IDs.
+ * Fetches the current user's available Odoo group XML IDs.
  *
  * Returns strings like: ['base.group_user', 'hr_attendance.group_hr_attendance']
  *
- * These match the `requiredGroups` entries in PortalModule registrations.
- *
- * Two-step lookup (res.groups.full_name is "Category / Name" — NOT the XML ID):
- *   1. Get DB IDs of the user's groups via res.groups, filtered by user_ids
- *   2. Resolve those IDs → "module.name" XML IDs via ir.model.data
+ * This hook checks the exact groups needed by standard registered PortalModules
+ * using `res.users.has_group`, which is safe for non-admin users to call.
  */
 export const useUserGroups = (
     client: OdooClient | null,
@@ -23,29 +21,21 @@ export const useUserGroups = (
         queryFn: async () => {
             if (!client) throw new Error('Not authenticated');
 
-            // Step 1: get the DB IDs of the groups the user belongs to
-            const groupRows = await client.searchRead<{ id: number }>(
-                'res.groups',
-                [['user_ids', 'in', [uid!]]],
-                ['id'],
-            );
-            const groupIds = groupRows.map((r) => r.id);
+            // Find exactly which groups the front-end modules care about
+            const requiredGroups = ModuleRegistry.getAllRequiredGroups();
 
-            if (groupIds.length === 0) return [];
+            if (requiredGroups.length === 0) return [];
 
-            // Step 2: resolve DB IDs → XML IDs via ir.model.data
-            // ir.model.data has module='hr_attendance', name='group_hr_attendance'
-            // → "module.name" == the XML ID used in requiredGroups
-            const imdRows = await client.searchRead<{ module: string; name: string }>(
-                'ir.model.data',
-                [
-                    ['model', '=', 'res.groups'],
-                    ['res_id', 'in', groupIds],
-                ],
-                ['module', 'name'],
+            // Check them all in parallel via standard Odoo has_group
+            const groupChecks = await Promise.all(
+                requiredGroups.map(async (extId) => {
+                    const hasAccess = await client.callKw<boolean>('res.users', 'has_group', [[uid], extId]);
+                    return { extId, hasAccess };
+                })
             );
 
-            return imdRows.map((r) => `${r.module}.${r.name}`);
+            // Filter down to only the ones returning true
+            return groupChecks.filter((g) => g.hasAccess).map((g) => g.extId);
         },
         enabled: client !== null && uid !== null,
         // Groups rarely change mid-session — cache indefinitely

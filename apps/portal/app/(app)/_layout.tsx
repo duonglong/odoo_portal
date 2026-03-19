@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator } from 'react-native';
 import { Slot, useRouter, usePathname, useRootNavigationState } from 'expo-router';
-import { useAuth, useUserGroups, useModules } from '@odoo-portal/core';
+import { useAuth, useUserGroups, useModules, ModuleRegistry } from '@odoo-portal/core';
+import { payslipModule } from '@odoo-portal/payslip';
+
+// Register modules
+ModuleRegistry.register(payslipModule);
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -219,7 +223,7 @@ export default function AppLayout() {
                             </View>
 
                             <View className="flex-row items-center gap-4">
-                                <Text className="text-sm font-bold text-slate-700">Oct 24, 2023</Text>
+                                <Text className="text-sm font-bold text-slate-700">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
                                 <TouchableOpacity className="flex-row items-center gap-2">
                                     <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center border border-primary/20">
                                         <Text className="text-primary font-bold text-xs">

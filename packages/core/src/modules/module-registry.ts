@@ -24,6 +24,17 @@ class ModuleRegistryImpl {
         return Array.from(this.modules.values());
     }
 
+    /** Get all unique required groups across all registered modules */
+    getAllRequiredGroups(): string[] {
+        const groups = new Set<string>();
+        for (const reg of this.modules.values()) {
+            if (reg.module.requiredGroups) {
+                reg.module.requiredGroups.forEach((g) => groups.add(g));
+            }
+        }
+        return Array.from(groups);
+    }
+
     /**
      * Get modules accessible to a user based on their Odoo groups.
      */
