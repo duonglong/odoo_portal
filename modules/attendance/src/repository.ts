@@ -10,7 +10,7 @@ type MappedLeave = Omit<LeaveRequest, 'employeeId' | 'employeeName' | 'typeId' |
 };
 
 const ATTENDANCE_MODEL = 'hr.attendance';
-const EMPLOYEE_MODEL = 'hr.employee';
+const EMPLOYEE_MODEL = 'hr.employee.public';
 const LEAVE_MODEL = 'hr.leave';
 const LEAVE_ALLOCATION_MODEL = 'hr.leave.allocation';
 

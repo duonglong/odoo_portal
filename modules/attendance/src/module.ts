@@ -15,8 +15,8 @@ export const attendanceModule: ModuleRegistration = {
         id: 'attendance',
         name: 'Attendance',
         icon: 'timer-outline',
-        requiredModels: ['hr.attendance', 'hr.employee'],
-        requiredGroups: ['hr_attendance.group_hr_attendance', 'hr_attendance.group_hr_attendance_manager'],
+        requiredModels: ['hr.attendance', 'hr.employee.public'],
+        requiredGroups: ['hr_attendance.group_hr_attendance', 'hr_attendance.group_hr_attendance_manager', 'base.group_portal'],
         routes: [
             {
                 path: '/attendance',

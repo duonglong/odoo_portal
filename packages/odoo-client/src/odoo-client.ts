@@ -151,6 +151,11 @@ export class OdooClient {
         return this.config;
     }
 
+    /** Get the BFF proxy base URL (the URL ApiTransport was initialised with) */
+    getProxyUrl(): string {
+        return this.transport.getBaseUrl();
+    }
+
     // ──────────────────────────────────────────
     // CRUD Operations
     // ──────────────────────────────────────────

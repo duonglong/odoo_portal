@@ -19,8 +19,7 @@ export const employeeFieldMap: FieldMap = {
     id: 'id',
     name: 'name',
     jobTitle: 'job_title',
-    departmentId: 'department_id',
-    attendanceState: 'attendance_state',
+    departmentId: 'department_id'
 };
 
 /**

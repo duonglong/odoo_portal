@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth, useOdooErrorToast, mapOdooError } from '@odoo-portal/core';
-import { useMyEmployee, useCheckInOut, useAttendanceRecords, useMonthAttendance } from '../hooks.js';
+import { useMyEmployee, useCheckInOut, useAttendanceRecords, useMonthAttendance, useIsCheckedIn } from '../hooks.js';
 import { useRouter } from 'expo-router';
 import type { AttendanceRecord } from '../types.js';
 
@@ -311,7 +311,7 @@ export default function AttendanceSummaryScreen() {
 
     const isLoading = isEmpLoading || isRecLoading;
     const isRefetching = isEmpRefetching || isRecRefetching;
-    const isCheckedIn = employee?.attendanceState === 'checked_in';
+    const { data: isCheckedIn } = useIsCheckedIn(client, employee?.id);
 
     // Derive active day logs from the fetched month records
     const todayRecords = monthRecords

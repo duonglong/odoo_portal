@@ -36,6 +36,25 @@ export const useMyEmployee = (client: OdooClient | null, uid: number | undefined
     });
 };
 
+/** Hook to check if employee is currently checked in */
+export const useIsCheckedIn = (client: OdooClient | null, employeeId: number | undefined) => {
+    return useQuery({
+        queryKey: ['attendance', 'is_checked_in', employeeId ?? 0] as const,
+        queryFn: async () => {
+            if (!client || !employeeId) return false;
+            const openRecords = await client.searchRead<{ id: number }>(
+                'hr.attendance',
+                [['employee_id', '=', employeeId], ['check_out', '=', false]],
+                ['id'],
+                { limit: 1 }
+            );
+            return openRecords.length > 0;
+        },
+        enabled: client !== null && employeeId !== undefined,
+        staleTime: 1000 * 60 * 1,
+    });
+};
+
 /** Hook to get attendance records (paginated) */
 export const useAttendanceRecords = (
     client: OdooClient | null,
@@ -99,6 +118,9 @@ export const useCheckInOut = (client: OdooClient | null, uid: number | undefined
             });
             void queryClient.invalidateQueries({
                 queryKey: ['attendance', 'month'],
+            });
+            void queryClient.invalidateQueries({
+                queryKey: ['attendance', 'is_checked_in'],
             });
         },
     });

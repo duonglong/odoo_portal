@@ -6,3 +6,4 @@ export * from './module.js';
 
 // Re-export screens for static file-system routing (Expo Router)
 export { default as PayslipListScreen } from './screens/PayslipListScreen.js';
+export { default as PayslipDetailScreen } from './screens/PayslipDetailScreen.js';

@@ -124,6 +124,7 @@ authRouter.post('/login', async (c) => {
         password,
         odooUrl,
         database,
+        login,
         uid,
         expiresAt: Date.now() + ttl * 1000,
     });

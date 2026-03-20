@@ -12,6 +12,8 @@ export interface StoredSession {
     odooUrl: string;
     /** Odoo database */
     database: string;
+    /** Odoo login (username/email) for web sessions */
+    login: string;
     /** Odoo uid */
     uid: number;
     /** When this entry expires (epoch ms) */

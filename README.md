@@ -857,6 +857,26 @@ Defaults to `http://localhost:3001` for local development.
 
 ---
 
+## VS Code Debugging
+
+
+1. **Debug API (Hono Backend):** 
+   - Open the VS Code "Run and Debug" panel (Cmd/Ctrl + Shift + D).
+   - Select **Debug API (Hono Backend)** and hit play. This will launch the `tsx watch` process for the BFF API and attach the debugger.
+   - You can now place breakpoints in `apps/api/src/**/*.ts`.
+
+2. **Debug Portal (Expo Web):**
+   - In your terminal, make sure the Expo server is running (`cd apps/portal && pnpm start` and hit `w`).
+   - From the VS Code "Run and Debug" panel, select **Debug Portal (Expo Web)**. This will launch a new Chrome window attached to the debugger.
+   - You can place breakpoints in any `apps/portal` or `modules/**` file.
+
+3. **Debug Full Stack (API + Web):**
+   - Select the **Debug Full Stack (API + Web)** compound to launch both the API and Web debuggers simultaneously. 
+
+*Note: To debug Expo Mobile (iOS/Android), you must install the official **Expo Tools** extension in VS Code and use the **Debug Portal (Expo Mobile)** configuration while the Expo server is running.*
+
+---
+
 ## License
 
 Private — internal use only.
