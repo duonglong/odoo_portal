@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, FlatList } from 'react-native';
-import { useProfile, useUpdateProfile, useUploadProfileImage, useChangePassword, useCountries } from '../hooks.js';
+import { useProfile, useUpdateProfile, useUploadProfileImage, useChangePassword, useCountries, useStates } from '../hooks.js';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,9 +15,11 @@ export default function ProfileScreen() {
     const changePassword = useChangePassword();
     const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
     const [formData, setFormData] = useState<any>({});
+    const { data: states } = useStates(formData?.countryId);
     const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
     const [pwError, setPwError] = useState<string | null>(null);
     const [countryPickerVisible, setCountryPickerVisible] = useState(false);
+    const [statePickerVisible, setStatePickerVisible] = useState(false);
 
     useEffect(() => {
         if (profile) {
@@ -28,7 +30,7 @@ export default function ProfileScreen() {
                 website: profile.website || '',
                 street: profile.street || '',
                 city: profile.city || '',
-                state: profile.stateId?.name || '',
+                stateId: profile.stateId?.id,
                 zip: profile.zip || '',
                 countryId: profile.countryId?.id
             });
@@ -49,6 +51,7 @@ export default function ProfileScreen() {
                     street: formData.street,
                     city: formData.city,
                     zip: formData.zip,
+                    stateId: formData.stateId ? { id: formData.stateId, name: '' } : undefined,
                     countryId: formData.countryId ? { id: formData.countryId, name: '' } : undefined,
                 }
             });
@@ -275,11 +278,18 @@ export default function ProfileScreen() {
                                     </View>
                                     <View className="w-1/2 md:w-1/4 px-2 mb-6">
                                         <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">State</Text>
-                                        <TextInput
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
-                                            value={formData.state}
-                                            editable={false}
-                                        />
+                                        <TouchableOpacity
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 pb-[14px] flex-row justify-between items-center"
+                                            onPress={() => setStatePickerVisible(true)}
+                                            disabled={!formData.countryId || !states || states.length === 0}
+                                        >
+                                            <Text className={formData.stateId ? "text-slate-900 font-medium" : "text-slate-400 font-medium"}>
+                                                {formData.stateId && states
+                                                    ? states.find(s => s.id === formData.stateId)?.name || 'Select State'
+                                                    : ((!states || states.length === 0) ? 'N/A' : 'Select State')}
+                                            </Text>
+                                            <MaterialCommunityIcons name="chevron-down" size={20} color="#94a3b8" />
+                                        </TouchableOpacity>
                                     </View>
                                     <View className="w-1/2 md:w-1/4 px-2 mb-6">
                                         <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">ZIP</Text>
@@ -333,12 +343,56 @@ export default function ProfileScreen() {
                                                     <TouchableOpacity
                                                         className={`px-4 py-3 flex-row items-center border-b border-slate-100 active:bg-slate-50 ${formData.countryId === item.id ? 'bg-primary/5' : ''}`}
                                                         onPress={() => {
-                                                            setFormData({ ...formData, countryId: item.id });
+                                                            setFormData({ ...formData, countryId: item.id, stateId: undefined });
                                                             setCountryPickerVisible(false);
                                                         }}
                                                     >
                                                         <Text className={`flex-1 text-base ${formData.countryId === item.id ? 'text-primary font-bold' : 'text-slate-900'}`}>{item.name}</Text>
                                                         {formData.countryId === item.id && (
+                                                            <MaterialCommunityIcons name="check" size={20} color="#3713ec" />
+                                                        )}
+                                                    </TouchableOpacity>
+                                                )}
+                                                keyboardShouldPersistTaps="handled"
+                                            />
+                                        </TouchableOpacity>
+                                    </TouchableOpacity>
+                                </Modal>
+
+                                <Modal
+                                    visible={statePickerVisible}
+                                    animationType="fade"
+                                    transparent={true}
+                                    onRequestClose={() => setStatePickerVisible(false)}
+                                >
+                                    <TouchableOpacity
+                                        className="flex-1 bg-black/50 justify-center items-center p-4"
+                                        activeOpacity={1}
+                                        onPress={() => setStatePickerVisible(false)}
+                                    >
+                                        <TouchableOpacity
+                                            activeOpacity={1}
+                                            className="bg-white w-full max-w-sm rounded-xl overflow-hidden shadow-lg max-h-[60%]"
+                                        >
+                                            <View className="flex-row items-center p-4 border-b border-slate-200 bg-slate-50 justify-between">
+                                                <Text className="text-lg font-bold text-slate-900">Select State</Text>
+                                                <TouchableOpacity onPress={() => setStatePickerVisible(false)} className="p-1 -mr-1">
+                                                    <MaterialCommunityIcons name="close" size={24} color="#64748b" />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <FlatList
+                                                data={states || []}
+                                                keyExtractor={item => item.id.toString()}
+                                                renderItem={({ item }) => (
+                                                    <TouchableOpacity
+                                                        className={`px-4 py-3 flex-row items-center border-b border-slate-100 active:bg-slate-50 ${formData.stateId === item.id ? 'bg-primary/5' : ''}`}
+                                                        onPress={() => {
+                                                            setFormData({ ...formData, stateId: item.id });
+                                                            setStatePickerVisible(false);
+                                                        }}
+                                                    >
+                                                        <Text className={`flex-1 text-base ${formData.stateId === item.id ? 'text-primary font-bold' : 'text-slate-900'}`}>{item.name}</Text>
+                                                        {formData.stateId === item.id && (
                                                             <MaterialCommunityIcons name="check" size={20} color="#3713ec" />
                                                         )}
                                                     </TouchableOpacity>

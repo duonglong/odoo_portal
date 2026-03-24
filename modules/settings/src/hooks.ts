@@ -69,3 +69,13 @@ export function useCountries() {
         staleTime: 1000 * 60 * 60, // 1 h — country list rarely changes
     });
 }
+
+export function useStates(countryId?: number) {
+    const repo = useSettingsRepo();
+    return useQuery({
+        queryKey: ['settings', 'states', countryId],
+        queryFn: () => repo.getStates(countryId!),
+        enabled: !!countryId,
+        staleTime: 1000 * 60 * 60, // 1 h
+    });
+}

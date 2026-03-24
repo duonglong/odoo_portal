@@ -5,6 +5,7 @@ import type { UserProfile } from './types.js';
 import { userFieldMap, partnerFieldMap, employeeFieldMap } from './mappings.js';
 
 export interface Country { id: number; name: string; }
+export interface State { id: number; name: string; country_id: [number, string] }
 
 export class SettingsRepository {
     constructor(private client: OdooClient) { }
@@ -95,6 +96,7 @@ export class SettingsRepository {
         if (data.city !== undefined) partnerUpdates['city'] = data.city;
         if (data.zip !== undefined) partnerUpdates['zip'] = data.zip;
         if (data.countryId !== undefined) partnerUpdates['country_id'] = data.countryId?.id ?? false;
+        if (data.stateId !== undefined) partnerUpdates['state_id'] = data.stateId?.id ?? false;
         
         let success = true;
 
@@ -136,5 +138,15 @@ export class SettingsRepository {
             { order: 'name asc' },
         );
         return rows.map(r => ({ id: r.id, name: r.name }));
+    }
+
+    async getStates(countryId: number): Promise<State[]> {
+        const rows = await this.client.searchRead<{ id: number; name: string; country_id: [number, string] }>(
+            'res.country.state',
+            [['country_id', '=', countryId]],
+            ['id', 'name', 'country_id'],
+            { order: 'name asc' },
+        );
+        return rows.map(r => ({ id: r.id, name: r.name, country_id: r.country_id }));
     }
 }
