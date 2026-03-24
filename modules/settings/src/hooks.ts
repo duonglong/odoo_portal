@@ -60,3 +60,12 @@ export function useChangePassword() {
         },
     });
 }
+
+export function useCountries() {
+    const repo = useSettingsRepo();
+    return useQuery({
+        queryKey: ['settings', 'countries'],
+        queryFn: () => repo.getCountries(),
+        staleTime: 1000 * 60 * 60, // 1 h — country list rarely changes
+    });
+}

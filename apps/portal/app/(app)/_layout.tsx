@@ -87,7 +87,7 @@ export default function AppLayout() {
                 </View>
                 <View>
                     <Text className="text-slate-900 text-base font-bold leading-none">Odoo Portal</Text>
-                    <Text className="text-slate-500 text-xs mt-1">Enterprise Edition</Text>
+                    <Text className="text-slate-500 text-xs mt-1"></Text>
                 </View>
             </View>
 

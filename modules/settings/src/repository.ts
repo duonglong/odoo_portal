@@ -4,6 +4,8 @@ import type { OdooDomain } from '@odoo-portal/odoo-client';
 import type { UserProfile } from './types.js';
 import { userFieldMap, partnerFieldMap, employeeFieldMap } from './mappings.js';
 
+export interface Country { id: number; name: string; }
+
 export class SettingsRepository {
     constructor(private client: OdooClient) { }
 
@@ -91,6 +93,7 @@ export class SettingsRepository {
         if (data.street !== undefined) partnerUpdates['street'] = data.street;
         if (data.city !== undefined) partnerUpdates['city'] = data.city;
         if (data.zip !== undefined) partnerUpdates['zip'] = data.zip;
+        if (data.countryId !== undefined) partnerUpdates['country_id'] = data.countryId?.id ?? false;
         
         let success = true;
 
@@ -122,5 +125,15 @@ export class SettingsRepository {
             'change_password',
             [currentPassword, newPassword],
         );
+    }
+
+    async getCountries(): Promise<Country[]> {
+        const rows = await this.client.searchRead<{ id: number; name: string }>(
+            'res.country',
+            [],
+            ['id', 'name'],
+            { order: 'name asc' },
+        );
+        return rows.map(r => ({ id: r.id, name: r.name }));
     }
 }
