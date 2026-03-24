@@ -75,12 +75,11 @@ To build standalone standalone apps (`.apk`, `.aab`, or `.ipa`) for devices, you
 ├─────────────────────────────────────────────────────┤
 │               packages/core (React layer)            │
 │  OdooProvider · useAuth · toast · ModuleRegistry     │
+│  PortalModule types                                  │
 ├─────────────────────────────────────────────────────┤
 │             packages/odoo-client (protocol)          │
 │    JSON-RPC transport · OdooClient · Field Mapper    │
-├─────────────────────────────────────────────────────┤
-│             packages/types (contracts)               │
-│  OdooSession · FieldMap · PortalModule               │
+│    OdooSession · FieldMap types                      │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -88,10 +87,9 @@ To build standalone standalone apps (`.apk`, `.aab`, or `.ipa`) for devices, you
 
 | Layer | Knows about | Never imports |
 |-------|------------|---------------|
-| `types` | Nothing | — |
-| `odoo-client` | `types` | React, UI |
-| `core` | `types`, `odoo-client` | Expo, modules |
-| `modules/*` | `types`, `odoo-client`, `core` | Other modules |
+| `odoo-client` | Nothing | React, UI |
+| `core` | `odoo-client` | Expo, modules |
+| `modules/*` | `odoo-client`, `core` | Other modules |
 | `apps/portal` | Everything | — |
 
 ---
@@ -164,9 +162,8 @@ const today = records.filter(r => r.checkIn.startsWith(new Date().toISOString().
 ```
 odoo_portal/
 ├── packages/
-│   ├── types/              ← Shared TypeScript interfaces (no runtime deps)
-│   ├── odoo-client/        ← JSON-RPC + BFF proxy client, auth, CRUD, field mapper
-│   └── core/               ← React providers, hooks, module registry, connection store
+│   ├── odoo-client/        ← JSON-RPC + BFF proxy client, auth, CRUD, field mapper, base types
+│   └── core/               ← React providers, hooks, module registry, connection store, plugin types
 ├── modules/
 │   └── attendance/         ← Attendance feature module
 │       └── src/
@@ -262,7 +259,7 @@ All data flows through **TanStack Query v5**:
 
 ```
 modules/my-feature/
-├── package.json          ← Workspace deps: core, types, odoo-client
+├── package.json          ← Workspace deps: core, odoo-client
 ├── tsconfig.json
 ├── nativewind-env.d.ts   ← NativeWind className types
 └── src/
@@ -296,7 +293,7 @@ export interface SaleOrder {
 
 ```typescript
 // src/mappings.ts
-import type { FieldMap } from '@odoo-portal/types';
+import type { FieldMap } from '@odoo-portal/odoo-client';
 
 export const saleOrderFieldMap: FieldMap = {
   id:          'id',
@@ -371,7 +368,7 @@ export default function OrderListScreen() {
 
 ```typescript
 // src/module.ts
-import type { ModuleRegistration } from '@odoo-portal/types';
+import type { ModuleRegistration } from '@odoo-portal/core';
 
 export const salesModule: ModuleRegistration = {
   module: {
@@ -481,7 +478,7 @@ A client adds custom fields `x_location` and `x_project_id` to `hr.attendance`:
 
 ```typescript
 import { attendanceFieldMap } from '@odoo-portal/attendance';
-import type { FieldMap } from '@odoo-portal/types';
+import type { FieldMap } from '@odoo-portal/odoo-client';
 
 const extendedFieldMap: FieldMap = {
   ...attendanceFieldMap,          // inherit all standard fields
@@ -695,7 +692,7 @@ Every `@odoo-portal/*` package that the portal app imports **must** be listed in
     "@odoo-portal/attendance": "workspace:*",   // ← don't forget!
     "@odoo-portal/core": "workspace:*",
     "@odoo-portal/odoo-client": "workspace:*",  // ← don't forget!
-    "@odoo-portal/types": "workspace:*",
+    // ...
     // ...
 }
 ```
@@ -792,15 +789,15 @@ These are **optional** — the login screen lets users enter any URL at runtime.
 
 The Expo **web** build cannot call Odoo's JSON-RPC API directly from the browser — the browser blocks cross-origin requests (CORS) unless Odoo is configured to allow your portal's origin. Asking every customer to change their Odoo CORS settings is impractical.
 
-`apps/api` is a thin Hono server that sits between the web app and Odoo:
+`apps/api` is a thin Hono server that sits between the client applications and Odoo:
 
 ```
-Browser (web)  →  apps/api (proxy)  →  Odoo  (server-to-server, no CORS)
+Portal Apps (Web, Mobile)  →  apps/api (proxy)  →  Odoo  (server-to-server)
 ```
 
-- The proxy authenticates with Odoo and stores the session **server-side** (browser never sees the Odoo cookie)
-- Issues a short-lived **JWT** to the web app instead
-- **Mobile (native) apps bypass the proxy entirely** — native apps have no CORS restriction
+- The proxy authenticates with Odoo and stores the session **server-side** (browser never sees the Odoo credentials)
+- Issues a short-lived **JWT** to the portal apps instead
+- Provides a consistent API layer for all platforms using Odoo's stateless External API
 
 ### Running the proxy
 
@@ -834,7 +831,7 @@ node dist/index.js
 | `GET` | `/health` | Health check |
 | `POST` | `/auth/login` | Authenticate → returns JWT |
 | `POST` | `/auth/logout` | Invalidate session |
-| `POST` | `/proxy` | Forward any Odoo JSON-RPC call (JWT required) |
+| `POST` | `/proxy/jsonrpc` | Forward any Odoo JSON-RPC call (JWT required) |
 
 ### Deployment
 

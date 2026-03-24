@@ -4,14 +4,14 @@ import { NetworkError, AccessDeniedError, RpcError, SessionExpiredError } from '
 /**
  * ApiTransport — sends JSON-RPC calls through the BFF proxy.
  *
- * Used on web where the browser cannot call Odoo directly due to CORS.
- * The proxy holds the Odoo session cookie server-side; this transport
- * only needs to send a JWT `Authorization` header.
+ * Used by all platforms (web and mobile). The proxy securely holds
+ * Odoo credentials server-side; this transport only needs to send a
+ * JWT `Authorization` header.
  *
  * API shape expected by the proxy:
- *   POST {proxyUrl}/proxy
+ *   POST {proxyUrl}/proxy/jsonrpc
  *   Authorization: Bearer <jwt>
- *   { "endpoint": "/web/dataset/call_kw", "params": { ... } }
+ *   { "model": "res.partner", "method": "search_read", "args": [...], "kwargs": {...} }
  */
 export class ApiTransport {
     private requestId = 0;
