@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { Slot, useRouter, usePathname, useRootNavigationState } from 'expo-router';
 import { useAuth, useUserGroups, useModules, ModuleRegistry } from '@odoo-portal/core';
 import { payslipModule } from '@odoo-portal/payslip';
@@ -8,12 +8,14 @@ import { payslipModule } from '@odoo-portal/payslip';
 ModuleRegistry.register(payslipModule);
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useProfile } from '@odoo-portal/settings';
 
 export default function AppLayout() {
     const { session, logout, isSessionChecked, client } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const { width } = useWindowDimensions();
+    const { data: profile } = useProfile();
 
     // Fetch the user's real Odoo group XML IDs, then filter modules accordingly.
     // Groups are cached for the session lifetime (staleTime: Infinity).
@@ -124,8 +126,16 @@ export default function AppLayout() {
             <View className="p-4 mt-auto border-t border-slate-200">
                 <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center gap-3 flex-1">
-                        <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center">
-                            <Text className="text-slate-500 font-bold uppercase">{session?.name?.charAt(0) || 'U'}</Text>
+                        <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center overflow-hidden border border-slate-300">
+                            {profile?.image1920 ? (
+                                <Image
+                                    source={{ uri: `data:image/jpeg;base64,${profile.image1920}` }}
+                                    className="w-full h-full"
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Text className="text-slate-500 font-bold uppercase">{session?.name?.charAt(0) || 'U'}</Text>
+                            )}
                         </View>
                         <View className="flex-1">
                             <Text className="text-slate-900 text-sm font-bold truncate" numberOfLines={1}>
@@ -223,13 +233,6 @@ export default function AppLayout() {
 
                             <View className="flex-row items-center gap-4">
                                 <Text className="text-sm font-bold text-slate-700">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
-                                <TouchableOpacity className="flex-row items-center gap-2">
-                                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center border border-primary/20">
-                                        <Text className="text-primary font-bold text-xs">
-                                            {session?.name ? session.name.charAt(0).toUpperCase() : 'U'}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
                             </View>
                         </View>
                     </View>
