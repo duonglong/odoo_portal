@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@odoo-portal/core';
-import { useMyEmployee, useAttendanceRecords, useCheckInOut } from '../hooks.js';
+import { useMyEmployee, useAttendanceRecords, useCheckInOut, useIsCheckedIn } from '../hooks.js';
 import { fmtTime, fmtDate, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '@odoo-portal/core';
 
 /**
@@ -16,10 +16,9 @@ import { fmtTime, fmtDate, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } f
 export default function AttendanceModuleCard({ onPress }: { onPress?: () => void }) {
     const { session, client } = useAuth();
     const { data: employee, isLoading: isEmpLoading } = useMyEmployee(client, session?.uid);
+    const { data: isCheckedIn } = useIsCheckedIn(client, employee?.id);
     const { data: records = [] } = useAttendanceRecords(client, employee?.id, 0, 5);
     const checkInOut = useCheckInOut(client, session?.uid);
-
-    const isCheckedIn = employee?.attendanceState === 'checked_in';
 
     // Find the most recent check-in time today
     const todayStr = new Date().toDateString();
