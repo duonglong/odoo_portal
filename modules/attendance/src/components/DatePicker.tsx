@@ -37,7 +37,7 @@ export function DatePicker({ value, onChange, minimumDate, maximumDate, type = '
         // Render a native HTML5 input element through the react-native-web createElement backdoor
         // We make the input completely transparent and absolute to capture all clicks on the children wrapper.
         return (
-            <View style={{ flex: 1, position: 'relative' }}>
+            <View style={{ position: 'relative' }}>
                 {children}
                 <input
                     type={type}
@@ -76,7 +76,6 @@ export function DatePicker({ value, onChange, minimumDate, maximumDate, type = '
     return (
         <>
             <TouchableOpacity
-                style={{ flex: 1 }}
                 activeOpacity={0.7}
                 onPress={() => setShowNativePicker(true)}
             >
