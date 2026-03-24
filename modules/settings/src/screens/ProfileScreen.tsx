@@ -43,6 +43,7 @@ export default function ProfileScreen() {
                 partnerId: profile.partnerId,
                 data: {
                     name: formData.name,
+                    jobPosition: formData.jobPosition,
                     taxId: formData.taxId,
                     website: formData.website,
                     street: formData.street,
@@ -222,9 +223,9 @@ export default function ProfileScreen() {
                                 <View className="w-full md:w-1/2 px-3 mb-6">
                                     <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Job Position</Text>
                                     <TextInput
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
                                         value={formData.jobPosition}
-                                        editable={false}
+                                        onChangeText={t => setFormData({ ...formData, jobPosition: t })}
                                     />
                                 </View>
                                 <View className="w-full md:w-1/2 px-3 mb-6">

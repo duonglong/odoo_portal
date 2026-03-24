@@ -73,7 +73,7 @@ export class SettingsRepository {
             name: mappedUser.name,
             email: mappedPartner?.email || mappedUser.login,
             image1920: mappedUser.image1920,
-            jobPosition: mappedEmployee?.jobPosition?.name,
+            jobPosition: mappedPartner?.jobPosition || mappedEmployee?.jobPosition?.name,
             companyName: mappedPartner?.companyName || mappedUser.companyId?.name,
             taxId: mappedPartner?.taxId,
             website: mappedPartner?.website,
@@ -88,6 +88,7 @@ export class SettingsRepository {
     async updateProfile(userId: number, partnerId: number, data: Partial<UserProfile>): Promise<boolean> {
         const partnerUpdates: Record<string, any> = {};
         if (data.name !== undefined) partnerUpdates['name'] = data.name;
+        if (data.jobPosition !== undefined) partnerUpdates['function'] = data.jobPosition;
         if (data.taxId !== undefined) partnerUpdates['vat'] = data.taxId;
         if (data.website !== undefined) partnerUpdates['website'] = data.website;
         if (data.street !== undefined) partnerUpdates['street'] = data.street;

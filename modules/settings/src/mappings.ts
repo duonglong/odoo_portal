@@ -21,7 +21,7 @@ export const partnerFieldMap: FieldMap = {
     stateId: 'state_id',
     zip: 'zip',
     countryId: 'country_id',
-
+    jobPosition: 'function',
 };
 
 export const employeeFieldMap: FieldMap = {
