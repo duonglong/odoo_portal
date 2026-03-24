@@ -1,0 +1,37 @@
+{
+    "name": "@odoo-portal/settings",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@expo/vector-icons": "^15.1.1",
+        "@odoo-portal/core": "workspace:*",
+        "@odoo-portal/odoo-client": "workspace:*",
+        "@tanstack/react-query": "^5.67.0"
+    },
+    "peerDependencies": {
+        "expo-image-picker": "*",
+        "expo-router": "*",
+        "react": ">=18.0.0",
+        "react-native": ">=0.73.0"
+    },
+    "devDependencies": {
+        "@types/react": "^19.0.0",
+        "expo-image-picker": "~15.0.0",
+        "expo-router": "~4.0.0",
+        "nativewind": "^4.1.0",
+        "react": "^19.0.0",
+        "react-native": "0.76.7",
+        "tailwindcss": "^3.4.0",
+        "typescript": "^5.7.0"
+    }
+}
