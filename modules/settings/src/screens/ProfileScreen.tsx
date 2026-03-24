@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
-import { useProfile, useUpdateProfile, useUploadProfileImage } from '../hooks.js';
+import { useProfile, useUpdateProfile, useUploadProfileImage, useChangePassword } from '../hooks.js';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { toast } from '@odoo-portal/core';
+import { toast, useAuth } from '@odoo-portal/core';
 
 export default function ProfileScreen() {
     const { data: profile, isLoading, error } = useProfile();
+    const { logout } = useAuth();
     const updateProfile = useUpdateProfile();
     const uploadImage = useUploadProfileImage();
+    const changePassword = useChangePassword();
     const [formData, setFormData] = useState<any>({});
-    
+    const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+    const [pwError, setPwError] = useState<string | null>(null);
+
     useEffect(() => {
         if (profile) {
             setFormData({
@@ -31,7 +35,7 @@ export default function ProfileScreen() {
 
     const handleSave = async () => {
         if (!profile?.partnerId) return;
-        
+
         try {
             await updateProfile.mutateAsync({
                 partnerId: profile.partnerId,
@@ -47,6 +51,30 @@ export default function ProfileScreen() {
             toast.success('Profile updated', 'Your changes have been saved.');
         } catch (e: any) {
             toast.error('Update failed', e.message || 'Failed to update profile');
+        }
+    };
+
+    const handleChangePassword = async () => {
+        setPwError(null);
+        if (!pwForm.current || !pwForm.next || !pwForm.confirm) {
+            setPwError('All password fields are required.');
+            return;
+        }
+        if (pwForm.next !== pwForm.confirm) {
+            setPwError('New passwords do not match.');
+            return;
+        }
+        if (pwForm.next.length < 8) {
+            setPwError('New password must be at least 8 characters.');
+            return;
+        }
+        try {
+            await changePassword.mutateAsync({ currentPassword: pwForm.current, newPassword: pwForm.next });
+            setPwForm({ current: '', next: '', confirm: '' });
+            toast.success('Password changed', 'Signing you out for security...');
+            setTimeout(() => logout(), 1500);
+        } catch (e: any) {
+            toast.error('Password change failed', e.message || 'Could not change password.');
         }
     };
 
@@ -87,7 +115,7 @@ export default function ProfileScreen() {
             </View>
         );
     }
-    
+
     if (error || !profile) {
         return (
             <View className="flex-1 items-center justify-center p-4">
@@ -100,7 +128,7 @@ export default function ProfileScreen() {
     return (
         <ScrollView className="flex-1 bg-slate-50">
             <Stack.Screen options={{ title: 'Settings', headerShown: false }} />
-            
+
             {/* Settings Header Area (Desktop) */}
             <View className="bg-white border-b border-slate-200 px-4 md:px-8 py-6 mb-6 md:mb-8 hidden md:flex">
                 <Text className="text-2xl font-black text-slate-900 mb-1">Settings</Text>
@@ -108,211 +136,230 @@ export default function ProfileScreen() {
             </View>
 
             <View className="max-w-7xl mx-auto px-4 md:px-8 w-full mb-12">
-                
+
 
                 {/* Settings Content Area */}
                 <View className="flex-1 max-w-4xl">
                     {/* Page Header */}
-                        <View className="mb-8">
-                            <Text className="text-3xl font-black text-slate-900 mb-2">Profile Details</Text>
-                            <Text className="text-slate-500 font-medium">Manage your public presence and personal information.</Text>
+                    <View className="mb-8">
+                        <Text className="text-3xl font-black text-slate-900 mb-2">Profile Details</Text>
+                        <Text className="text-slate-500 font-medium">Manage your public presence and personal information.</Text>
+                    </View>
+
+                    {/* Core Identity Section */}
+                    <View className="bg-white rounded-xl p-6 md:p-8 border border-slate-200 shadow-sm mb-8 overflow-hidden relative">
+                        <View className="absolute -top-3 -right-3 opacity-5">
+                            <MaterialCommunityIcons name="face-man" size={80} color="#000" style={{ transform: [{ rotate: '15deg' }] }} />
                         </View>
 
-                {/* Core Identity Section */}
-                <View className="bg-white rounded-xl p-6 md:p-8 border border-slate-200 shadow-sm mb-8 overflow-hidden relative">
-                    <View className="absolute -top-3 -right-3 opacity-5">
-                        <MaterialCommunityIcons name="face-man" size={80} color="#000" style={{ transform: [{ rotate: '15deg' }] }} />
-                    </View>
-                    
-                    <View className="flex-row items-start gap-6 mb-8 z-10">
-                        <View className="relative">
-                            <View className="w-24 h-24 rounded-xl border-4 border-white shadow-sm bg-slate-200 items-center justify-center overflow-hidden">
-                                {profile.image1920 ? (
-                                    <Image
-                                        source={{ uri: `data:image/jpeg;base64,${profile.image1920}` }}
-                                        className="w-full h-full"
-                                        resizeMode="cover"
+                        <View className="flex-row items-start gap-6 mb-8 z-10">
+                            <View className="relative">
+                                <View className="w-24 h-24 rounded-xl border-4 border-white shadow-sm bg-slate-200 items-center justify-center overflow-hidden">
+                                    {profile.image1920 ? (
+                                        <Image
+                                            source={{ uri: `data:image/jpeg;base64,${profile.image1920}` }}
+                                            className="w-full h-full"
+                                            resizeMode="cover"
+                                        />
+                                    ) : (
+                                        <Text className="text-3xl font-bold text-slate-400">{profile.name.charAt(0)}</Text>
+                                    )}
+                                    {uploadImage.isPending && (
+                                        <View className="absolute inset-0 bg-black/40 items-center justify-center">
+                                            <ActivityIndicator size="small" color="white" />
+                                        </View>
+                                    )}
+                                </View>
+                                <TouchableOpacity
+                                    className="absolute -bottom-2 -right-2 bg-primary p-2 rounded-lg shadow-sm"
+                                    onPress={handlePickImage}
+                                    disabled={uploadImage.isPending}
+                                >
+                                    <MaterialCommunityIcons name="pencil" size={16} color="white" />
+                                </TouchableOpacity>
+                            </View>
+                            <View className="flex-1 justify-center py-2">
+                                <Text className="text-lg font-bold text-slate-900 mb-1">Personal Information</Text>
+                                <Text className="text-xs text-slate-500">Public profile details used for your professional identity.</Text>
+                            </View>
+                        </View>
+
+                        <View className="flex-row flex-wrap -mx-3">
+                            <View className="w-full md:w-1/2 px-3 mb-6">
+                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Full Name</Text>
+                                <TextInput
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
+                                    value={formData.name}
+                                    onChangeText={t => setFormData({ ...formData, name: t })}
+                                />
+                            </View>
+                            <View className="w-full md:w-1/2 px-3 mb-6">
+                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Job Position</Text>
+                                <TextInput
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
+                                    value={formData.jobPosition}
+                                    editable={false}
+                                />
+                            </View>
+                            <View className="w-full md:w-1/2 px-3 mb-6">
+                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tax ID</Text>
+                                <TextInput
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
+                                    value={formData.taxId}
+                                    onChangeText={t => setFormData({ ...formData, taxId: t })}
+                                />
+                            </View>
+                            <View className="w-full md:w-1/2 px-3 mb-6">
+                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Website</Text>
+                                <TextInput
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
+                                    value={formData.website}
+                                    onChangeText={t => setFormData({ ...formData, website: t })}
+                                />
+                            </View>
+                        </View>
+
+                        <View className="mt-4 pt-8 border-t border-slate-100">
+                            <View className="flex-row items-center gap-2 mb-4">
+                                <MaterialCommunityIcons name="domain" size={20} color="#3713ec" />
+                                <Text className="text-sm font-bold text-slate-900">Organization & Address</Text>
+                            </View>
+
+                            <View className="mb-6">
+                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Company</Text>
+                                <TextInput
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
+                                    value={formData.companyName}
+                                    editable={false}
+                                />
+                            </View>
+
+                            <View className="flex-row flex-wrap -mx-2">
+                                <View className="w-full px-2 mb-6">
+                                    <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Address (Street)</Text>
+                                    <TextInput
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
+                                        value={formData.street}
+                                        onChangeText={t => setFormData({ ...formData, street: t })}
                                     />
-                                ) : (
-                                    <Text className="text-3xl font-bold text-slate-400">{profile.name.charAt(0)}</Text>
-                                )}
-                                {uploadImage.isPending && (
-                                    <View className="absolute inset-0 bg-black/40 items-center justify-center">
-                                        <ActivityIndicator size="small" color="white" />
-                                    </View>
-                                )}
-                            </View>
-                            <TouchableOpacity
-                                className="absolute -bottom-2 -right-2 bg-primary p-2 rounded-lg shadow-sm"
-                                onPress={handlePickImage}
-                                disabled={uploadImage.isPending}
-                            >
-                                <MaterialCommunityIcons name="pencil" size={16} color="white" />
-                            </TouchableOpacity>
-                        </View>
-                        <View className="flex-1 justify-center py-2">
-                            <Text className="text-lg font-bold text-slate-900 mb-1">Personal Information</Text>
-                            <Text className="text-xs text-slate-500">Public profile details used for your professional identity.</Text>
-                        </View>
-                    </View>
-
-                    <View className="flex-row flex-wrap -mx-3">
-                        <View className="w-full md:w-1/2 px-3 mb-6">
-                            <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Full Name</Text>
-                            <TextInput 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
-                                value={formData.name}
-                                onChangeText={t => setFormData({...formData, name: t})}
-                            />
-                        </View>
-                        <View className="w-full md:w-1/2 px-3 mb-6">
-                            <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Job Position</Text>
-                            <TextInput 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
-                                value={formData.jobPosition}
-                                editable={false}
-                            />
-                        </View>
-                        <View className="w-full md:w-1/2 px-3 mb-6">
-                            <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tax ID</Text>
-                            <TextInput 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
-                                value={formData.taxId}
-                                onChangeText={t => setFormData({...formData, taxId: t})}
-                            />
-                        </View>
-                        <View className="w-full md:w-1/2 px-3 mb-6">
-                            <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Website</Text>
-                            <TextInput 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
-                                value={formData.website}
-                                onChangeText={t => setFormData({...formData, website: t})}
-                            />
-                        </View>
-                    </View>
-
-                    <View className="mt-4 pt-8 border-t border-slate-100">
-                        <View className="flex-row items-center gap-2 mb-4">
-                            <MaterialCommunityIcons name="domain" size={20} color="#3713ec" />
-                            <Text className="text-sm font-bold text-slate-900">Organization & Address</Text>
-                        </View>
-
-                        <View className="mb-6">
-                            <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Company</Text>
-                            <TextInput 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
-                                value={formData.companyName}
-                                editable={false}
-                            />
-                        </View>
-
-                        <View className="flex-row flex-wrap -mx-2">
-                            <View className="w-full px-2 mb-6">
-                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Address (Street)</Text>
-                                <TextInput 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
-                                    value={formData.street}
-                                    onChangeText={t => setFormData({...formData, street: t})}
-                                />
-                            </View>
-                            <View className="w-full md:w-1/2 px-2 mb-6">
-                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">City</Text>
-                                <TextInput 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
-                                    value={formData.city}
-                                    onChangeText={t => setFormData({...formData, city: t})}
-                                />
-                            </View>
-                            <View className="w-1/2 md:w-1/4 px-2 mb-6">
-                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">State</Text>
-                                <TextInput 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
-                                    value={formData.state}
-                                    editable={false}
-                                />
-                            </View>
-                            <View className="w-1/2 md:w-1/4 px-2 mb-6">
-                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">ZIP</Text>
-                                <TextInput 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
-                                    value={formData.zip}
-                                    onChangeText={t => setFormData({...formData, zip: t})}
-                                />
-                            </View>
-                            <View className="w-full px-2 mb-6">
-                                <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Country</Text>
-                                <TextInput 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
-                                    value={formData.country}
-                                    editable={false}
-                                />
+                                </View>
+                                <View className="w-full md:w-1/2 px-2 mb-6">
+                                    <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">City</Text>
+                                    <TextInput
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
+                                        value={formData.city}
+                                        onChangeText={t => setFormData({ ...formData, city: t })}
+                                    />
+                                </View>
+                                <View className="w-1/2 md:w-1/4 px-2 mb-6">
+                                    <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">State</Text>
+                                    <TextInput
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
+                                        value={formData.state}
+                                        editable={false}
+                                    />
+                                </View>
+                                <View className="w-1/2 md:w-1/4 px-2 mb-6">
+                                    <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">ZIP</Text>
+                                    <TextInput
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium"
+                                        value={formData.zip}
+                                        onChangeText={t => setFormData({ ...formData, zip: t })}
+                                    />
+                                </View>
+                                <View className="w-full px-2 mb-6">
+                                    <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Country</Text>
+                                    <TextInput
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 font-medium opacity-70"
+                                        value={formData.country}
+                                        editable={false}
+                                    />
+                                </View>
                             </View>
                         </View>
                     </View>
-                </View>
 
-                {/* Change Password Section */}
-                <View className="bg-white rounded-xl p-6 md:p-8 border border-slate-200 shadow-sm mb-8 overflow-hidden relative">
-                    <View className="absolute -top-3 -right-3 opacity-5">
-                        <MaterialCommunityIcons name="lock-reset" size={80} color="#3713ec" style={{ transform: [{ rotate: '15deg' }] }} />
-                    </View>
-                    <View className="z-10">
-                        <View className="flex-row items-center gap-2 mb-6">
-                            <MaterialCommunityIcons name="form-textbox-password" size={20} color="#3713ec" />
-                            <Text className="text-lg font-bold text-slate-900">Change Password</Text>
+                    {/* Change Password Section */}
+                    <View className="bg-white rounded-xl p-6 md:p-8 border border-slate-200 shadow-sm mb-8 overflow-hidden relative">
+                        <View className="absolute -top-3 -right-3 opacity-5">
+                            <MaterialCommunityIcons name="lock-reset" size={80} color="#3713ec" style={{ transform: [{ rotate: '15deg' }] }} />
                         </View>
-                        
-                        <View className="w-full max-w-2xl mb-6">
-                            <Text className="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">Current Password</Text>
-                            <TextInput 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
-                                placeholder="••••••••"
-                                secureTextEntry
-                            />
-                        </View>
-                        <View className="flex-row flex-wrap -mx-3 mb-6 max-w-3xl">
-                            <View className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
-                                <Text className="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">New Password</Text>
-                                <TextInput 
+                        <View className="z-10">
+                            <View className="flex-row items-center gap-2 mb-6">
+                                <MaterialCommunityIcons name="form-textbox-password" size={20} color="#3713ec" />
+                                <Text className="text-lg font-bold text-slate-900">Change Password</Text>
+                            </View>
+
+                            {pwError && (
+                                <View className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+                                    <Text className="text-red-600 text-sm font-medium">{pwError}</Text>
+                                </View>
+                            )}
+
+                            <View className="w-full max-w-2xl mb-6">
+                                <Text className="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">Current Password</Text>
+                                <TextInput
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
-                                    placeholder="••••••••"
                                     secureTextEntry
+                                    value={pwForm.current}
+                                    onChangeText={t => setPwForm(f => ({ ...f, current: t }))}
+                                    editable={!changePassword.isPending}
                                 />
                             </View>
-                            <View className="w-full md:w-1/2 px-3">
-                                <Text className="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">Confirm New Password</Text>
-                                <TextInput 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
-                                    placeholder="••••••••"
-                                    secureTextEntry
-                                />
+                            <View className="flex-row flex-wrap -mx-3 mb-6 max-w-3xl">
+                                <View className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                                    <Text className="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">New Password</Text>
+                                    <TextInput
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
+                                        secureTextEntry
+                                        value={pwForm.next}
+                                        onChangeText={t => setPwForm(f => ({ ...f, next: t }))}
+                                        editable={!changePassword.isPending}
+                                    />
+                                </View>
+                                <View className="w-full md:w-1/2 px-3">
+                                    <Text className="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">Confirm New Password</Text>
+                                    <TextInput
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
+                                        secureTextEntry
+                                        value={pwForm.confirm}
+                                        onChangeText={t => setPwForm(f => ({ ...f, confirm: t }))}
+                                        editable={!changePassword.isPending}
+                                    />
+                                </View>
                             </View>
-                        </View>
-                        <View className="pt-2">
-                            <TouchableOpacity className="bg-primary px-8 py-3 rounded-lg shadow-sm self-start">
-                                <Text className="text-white font-bold text-sm">Update Password</Text>
-                            </TouchableOpacity>
+                            <View className="pt-2">
+                                <TouchableOpacity
+                                    className={`bg-primary px-8 py-3 rounded-lg shadow-sm self-start flex-row items-center gap-2 ${changePassword.isPending ? 'opacity-50' : ''}`}
+                                    onPress={handleChangePassword}
+                                    disabled={changePassword.isPending}
+                                >
+                                    {changePassword.isPending && <ActivityIndicator size="small" color="white" />}
+                                    <Text className="text-white font-bold text-sm">
+                                        {changePassword.isPending ? 'Updating...' : 'Update Password'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                {/* Actions Bar */}
-                <View className="flex-row flex-wrap items-center justify-between pt-6 border-t border-slate-200 mt-4 mb-20 md:mb-8 gap-4">
-                    <TouchableOpacity>
-                        <Text className="text-slate-500 font-bold text-sm">Discard All Changes</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        className={`bg-primary px-10 py-4 rounded-lg shadow-sm flex-row items-center gap-2 ${updateProfile.isPending ? 'opacity-50' : ''}`}
-                        onPress={handleSave}
-                        disabled={updateProfile.isPending}
-                    >
-                        <MaterialCommunityIcons name="content-save-outline" size={18} color="white" />
-                        <Text className="text-white font-bold">{updateProfile.isPending ? 'Saving...' : 'Save Profile'}</Text>
-                    </TouchableOpacity>
-                </View>
+                    {/* Actions Bar */}
+                    <View className="flex-row flex-wrap items-center justify-between pt-6 border-t border-slate-200 mt-4 mb-20 md:mb-8 gap-4">
+                        <TouchableOpacity>
+                            <Text className="text-slate-500 font-bold text-sm">Discard All Changes</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            className={`bg-primary px-10 py-4 rounded-lg shadow-sm flex-row items-center gap-2 ${updateProfile.isPending ? 'opacity-50' : ''}`}
+                            onPress={handleSave}
+                            disabled={updateProfile.isPending}
+                        >
+                            <MaterialCommunityIcons name="content-save-outline" size={18} color="white" />
+                            <Text className="text-white font-bold">{updateProfile.isPending ? 'Saving...' : 'Save Profile'}</Text>
+                        </TouchableOpacity>
+                    </View>
 
+                </View>
             </View>
-        </View>
         </ScrollView>
     );
 }

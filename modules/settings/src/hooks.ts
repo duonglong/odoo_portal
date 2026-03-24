@@ -50,3 +50,13 @@ export function useUploadProfileImage() {
         },
     });
 }
+
+export function useChangePassword() {
+    const repo = useSettingsRepo();
+
+    return useMutation({
+        mutationFn: async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
+            return repo.changePassword(currentPassword, newPassword);
+        },
+    });
+}

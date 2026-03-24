@@ -114,16 +114,13 @@ export class SettingsRepository {
         ]);
     }
 
-    async changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean> {
-        try {
-            // Re-authenticate to ensure they know the current password
-            // In a real scenario you may also call a specialized controller for password change
-            // This requires the standard Odoo endpoint which is not exported by OdooClient easily
-            // except through RPC web endpoints. For now we will mock this or throw if not supported.
-            throw new Error("Changing password via JSON-RPC is restricted on Odoo by default without writing to res.users, which normal access rights restrict.");
-        } catch (e) {
-            console.error("Change password failed", e);
-            throw e;
-        }
+    async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+        // Odoo's built-in method — all authenticated users can call this on themselves.
+        // It validates old_passwd server-side before writing the new one.
+        await this.client.callKw<boolean>(
+            'res.users',
+            'change_password',
+            [currentPassword, newPassword],
+        );
     }
 }
