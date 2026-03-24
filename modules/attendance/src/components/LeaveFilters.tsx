@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { DatePicker } from './DatePicker.js';
 import type { LeaveFilters as BaseFilters } from '../repository.js';
 
 export type LeaveFiltersValue = BaseFilters;
@@ -21,7 +22,28 @@ export function LeaveFilters({ filters, onChange }: Props) {
     ];
 
     const currentStatus = filters.status || 'all';
-    const currentYear = filters.year || new Date().getFullYear();
+    
+    const thisYear = new Date().getFullYear();
+    const currentPeriodLabel = filters.month && filters.year
+        ? `${new Date(filters.year, filters.month - 1).toLocaleString('default', { month: 'short' })} ${filters.year}`
+        : filters.year || thisYear;
+
+    const currentMonthForPicker = filters.month || new Date().getMonth() + 1;
+    const currentYearForPicker = filters.year || thisYear;
+    const dateValue = `${currentYearForPicker}-${String(currentMonthForPicker).padStart(2, '0')}`;
+
+    const handleDateChange = (dateStr: string) => {
+        // Web type="month" returns "YYYY-MM", Native returns "YYYY-MM-DD"
+        const parts = dateStr.split('-');
+        const yStr = parts[0];
+        const mStr = parts[1];
+        if (!yStr || !mStr) return;
+        onChange({ 
+            ...filters, 
+            month: parseInt(mStr, 10), 
+            year: parseInt(yStr, 10) 
+        });
+    };
 
     return (
         <View className="flex flex-col gap-4">
@@ -38,15 +60,21 @@ export function LeaveFilters({ filters, onChange }: Props) {
                         <MaterialIcons name="add" size={18} className="text-white" />
                         <Text className="text-sm font-bold text-white">New Request</Text>
                     </Pressable>
-                    <Pressable className="flex flex-row items-center gap-2 px-4 py-2 bg-white  border border-slate-200  rounded-lg">
-                        <MaterialIcons name="filter-list" size={16} className="text-slate-700 " />
-                        <Text className="text-sm font-bold text-slate-700 ">Filter</Text>
-                    </Pressable>
-                    <Pressable className="flex flex-row items-center gap-2 px-4 py-2 bg-white  border border-slate-200  rounded-lg">
-                        <MaterialIcons name="calendar-today" size={16} className="text-slate-700 " />
-                        <Text className="text-sm font-bold text-slate-700 ">{currentYear}</Text>
-                        <MaterialIcons name="expand-more" size={16} className="text-slate-700 " />
-                    </Pressable>
+                    <DatePicker value={dateValue} type="month" onChange={handleDateChange}>
+                        <View className="flex flex-row items-center gap-2 px-4 py-2 bg-white  border border-slate-200  rounded-lg">
+                            <MaterialIcons name="calendar-today" size={16} className="text-slate-700 " />
+                            <Text className="text-sm font-bold text-slate-700 ">{currentPeriodLabel}</Text>
+                            <MaterialIcons name="expand-more" size={16} className="text-slate-700 " />
+                        </View>
+                    </DatePicker>
+                    {filters.month && (
+                        <Pressable
+                            className="flex flex-row items-center px-3 py-2 bg-white border border-slate-200 rounded-lg"
+                            onPress={() => onChange({ ...filters, month: undefined })}
+                        >
+                            <MaterialIcons name="close" size={16} className="text-slate-700" />
+                        </Pressable>
+                    )}
                 </View>
             </View>
 

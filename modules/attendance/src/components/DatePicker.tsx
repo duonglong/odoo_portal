@@ -3,23 +3,31 @@ import { View, Platform, TouchableOpacity, Text, Modal, StyleSheet } from 'react
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-interface DatePickerProps {
-    value: string; // ISO format: YYYY-MM-DD
+export interface DatePickerProps {
+    value: string; // ISO format: YYYY-MM-DD or YYYY-MM
     onChange: (date: string) => void;
     minimumDate?: Date;
     maximumDate?: Date;
+    type?: 'date' | 'month' | 'time';
     children: React.ReactNode;
 }
 
-export function DatePicker({ value, onChange, minimumDate, maximumDate, children }: DatePickerProps) {
+export function DatePicker({ value, onChange, minimumDate, maximumDate, type = 'date', children }: DatePickerProps) {
     const [showNativePicker, setShowNativePicker] = useState(false);
 
-    // Map "YYYY-MM-DD" to Date
+    // Map "YYYY-MM-DD" or "YYYY-MM" to Date
     const handleDateInit = (isoString?: string) => {
         if (!isoString) return new Date();
-        const [y, m, d] = isoString.split('-');
-        if (!y || !m || !d) return new Date();
-        return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+        const parts = isoString.split('-');
+        if (parts.length >= 2) {
+            const yStr = parts[0] || '1970';
+            const mStr = parts[1] || '01';
+            const y = parseInt(yStr, 10);
+            const m = parseInt(mStr, 10);
+            const d = parts.length > 2 && parts[2] ? parseInt(parts[2], 10) : 1;
+            return new Date(y, m - 1, d);
+        }
+        return new Date();
     };
 
     const parsedDate = handleDateInit(value);
@@ -32,7 +40,7 @@ export function DatePicker({ value, onChange, minimumDate, maximumDate, children
             <View style={{ flex: 1, position: 'relative' }}>
                 {children}
                 <input
-                    type="date"
+                    type={type}
                     value={value}
                     onChange={(e) => {
                         const val = e.target.value;

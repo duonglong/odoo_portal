@@ -12,8 +12,9 @@ export default function LeaveRequestListScreen() {
     const { data: employee } = useMyEmployee(client, session?.uid);
 
     const [filters, setFilters] = useState<LeaveFiltersValue>({
+        status: 'all',
         year: new Date().getFullYear(),
-        status: 'all'
+        month: new Date().getMonth() + 1,
     });
     const [page, setPage] = useState(0);
 

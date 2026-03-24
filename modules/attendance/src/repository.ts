@@ -16,7 +16,9 @@ const LEAVE_ALLOCATION_MODEL = 'hr.leave.allocation';
 
 export type LeaveFilters = {
     year?: number;
+    month?: number;
     status?: string; // 'all' | 'approved' | 'pending' | 'draft'
+    typeId?: number;
 };
 
 /**
@@ -151,10 +153,17 @@ export class AttendanceRepository {
         const domain: OdooDomain = [['employee_id', '=', employeeId]];
 
         if (filters.year) {
-            const startYear = `${filters.year}-01-01 00:00:00`;
-            const endYear = `${filters.year}-12-31 23:59:59`;
-            domain.push(['request_date_from', '>=', startYear]);
-            domain.push(['request_date_from', '<=', endYear]);
+            const startMonthStr = filters.month ? String(filters.month).padStart(2, '0') : '01';
+            const endMonthStr = filters.month ? String(filters.month).padStart(2, '0') : '12';
+            
+            // Get last day of the target month
+            const endMonthDay = new Date(filters.year, filters.month || 12, 0).getDate();
+
+            const startStr = `${filters.year}-${startMonthStr}-01 00:00:00`;
+            const endStr = `${filters.year}-${endMonthStr}-${endMonthDay} 23:59:59`;
+            
+            domain.push(['request_date_from', '>=', startStr]);
+            domain.push(['request_date_from', '<=', endStr]);
         }
 
         if (filters.status && filters.status !== 'all') {
@@ -169,6 +178,10 @@ export class AttendanceRepository {
                     domain.push(['state', '=', 'draft']);
                     break;
             }
+        }
+
+        if (filters.typeId) {
+            domain.push(['holiday_status_id', '=', filters.typeId]);
         }
 
         const fields = getOdooFields(leaveRequestFieldMap);
