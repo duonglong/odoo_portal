@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { OdooProvider, ModuleRegistry, useAuth, mapOdooError, toast, type ToastMessage } from '@odoo-portal/core';
 import { attendanceModule } from '@odoo-portal/attendance';
+import { settingsModule } from '@odoo-portal/settings';
 import { platformSessionStorage } from '~/lib/storage';
 import { Platform } from 'react-native';
 import { createOdooClient } from '~/lib/create-client';
@@ -42,6 +43,7 @@ if (typeof document !== 'undefined') {
 
 // ── Register feature modules (runs once at app start) ──────
 ModuleRegistry.register(attendanceModule);
+ModuleRegistry.register(settingsModule);
 
 // ── Custom Toast System ────────────────────────────
 

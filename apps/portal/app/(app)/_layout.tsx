@@ -59,8 +59,7 @@ export default function AppLayout() {
                 path: r.path,
                 icon: r.icon ?? 'circle-outline',
             }))
-        ),
-        { name: 'Settings', path: '/settings', icon: 'cog-outline' }
+        )
     ];
 
     // Find the most specific active route to avoid double highlighting (e.g., /attendance and /attendance/leave-request)
@@ -214,11 +213,11 @@ export default function AppLayout() {
                         <View className="flex-row items-center gap-6">
                             <View className="flex-row items-center gap-4 border-r border-slate-200 pr-6 mr-2">
                                 <TouchableOpacity className="relative">
-                                    <MaterialCommunityIcons name="bell-outline" size={22} color="#64748b" />
-                                    <View className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border-2 border-white" />
+                                    {/* <MaterialCommunityIcons name="bell-outline" size={22} color="#64748b" /> */}
+                                    {/* <View className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border-2 border-white" /> */}
                                 </TouchableOpacity>
                                 <TouchableOpacity>
-                                    <MaterialCommunityIcons name="help-circle-outline" size={22} color="#64748b" />
+                                    {/* <MaterialCommunityIcons name="help-circle-outline" size={22} color="#64748b" /> */}
                                 </TouchableOpacity>
                             </View>
 
