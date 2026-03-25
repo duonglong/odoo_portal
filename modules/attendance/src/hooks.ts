@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { OdooClient } from '@odoo-portal/odoo-client';
 import { AttendanceRepository, type LeaveFilters } from './repository.js';
-import type { LeaveRequest } from './types.js';
 
 const QUERY_KEYS = {
     employee: (userId: number) => ['attendance', 'employee', userId] as const,

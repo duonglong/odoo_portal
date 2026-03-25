@@ -407,6 +407,66 @@ That's it. The tab navigator auto-discovers the module if the user has the requi
 
 ---
 
+### ⚡ Scaffold a Module (faster alternative)
+
+Instead of creating all 9 files manually, run the scaffold command from the repo root:
+
+```bash
+pnpm new-module <slug> "Display Name"
+
+# Example
+pnpm new-module sales "Sales Orders"
+```
+
+This generates `modules/sales/` with all boilerplate wired up correctly:
+
+```
+modules/sales/
+├── package.json              ← workspace pkg, correct deps
+├── tsconfig.json             ← extends tsconfig.base.json
+├── nativewind-env.d.ts       ← NativeWind className support
+└── src/
+    ├── types.ts              ← SalesRecord interface
+    ├── mappings.ts           ← salesFieldMap (camelCase → Odoo)
+    ├── repository.ts         ← SalesRepository.list()
+    ├── hooks.ts              ← useSalesRecords() TanStack hook
+    ├── module.ts             ← salesModule registration
+    ├── index.ts              ← full public barrel
+    ├── screens/
+    │   └── MainScreen.tsx    ← working FlatList screen
+    └── widgets/
+        └── SalesModuleCard.tsx
+```
+
+After scaffolding, fill in **4 TODOs** and wire it up:
+
+| File | What to fill in |
+|---|---|
+| `types.ts` | Add domain fields |
+| `mappings.ts` | Map to real Odoo field names |
+| `repository.ts` | Set `MODEL` constant (e.g. `'sale.order'`) |
+| `module.ts` | Set `requiredModels`, `requiredGroups`, pick an icon |
+
+Then wire into the app (the script prints the exact commands):
+
+```bash
+# 1. Link the workspace package
+pnpm install
+
+# 2. Add to apps/portal/package.json → dependencies
+"@odoo-portal/sales": "workspace:*"
+
+# 3. Register in apps/portal/app/_layout.tsx
+import { salesModule } from '@odoo-portal/sales';
+ModuleRegistry.register(salesModule);
+
+# 4. Create the Expo Router entry point
+# apps/portal/app/(app)/sales.tsx
+export { SalesMainScreen as default } from '@odoo-portal/sales';
+```
+
+---
+
 ## The PortalModule Contract
 
 ```typescript

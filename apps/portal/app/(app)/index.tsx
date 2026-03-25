@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth, useModules, useUserGroups } from '@odoo-portal/core';
-import type { DashboardWidget } from '@odoo-portal/core';
 
 /**
  * Home / Dashboard Screen
