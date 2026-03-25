@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth, useModules, useUserGroups } from '@odoo-portal/core';
 import type { DashboardWidget } from '@odoo-portal/core';
@@ -20,16 +21,74 @@ export default function HomeScreen() {
 
     // Collect widgets from accessible modules, sorted by order
     const { metricWidgets, moduleCards } = useMemo(() => {
-        const allWidgets: (DashboardWidget & { modulePath?: string })[] = modules.flatMap(reg =>
-            (reg.dashboardWidgets ?? []).map(w => ({
-                ...w,
-                modulePath: reg.module.routes[0]?.path,
-            })),
-        );
+        const allMetricWidgets: { order: number; node: React.ReactNode }[] = [];
+        const allModuleCards: { order: number; node: React.ReactNode }[] = [];
+
+        modules.forEach(reg => {
+            let hasCustomModuleCard = false;
+            
+            if (reg.dashboardWidgets) {
+                reg.dashboardWidgets.forEach(w => {
+                    const path = reg.module.routes[0]?.path;
+                    if (w.MetricCard) {
+                        const Card = w.MetricCard as React.ComponentType;
+                        allMetricWidgets.push({ order: w.order, node: <Card key={`metric-${w.id}`} /> });
+                    }
+                    if (w.ModuleCard) {
+                        hasCustomModuleCard = true;
+                        const Card = w.ModuleCard as React.ComponentType<{ onPress?: () => void }>;
+                        allModuleCards.push({
+                           order: w.order,
+                           node: (
+                              <Card 
+                                  key={`module-${w.id}`} 
+                                  onPress={() => {
+                                      if (path) router.push(path as never);
+                                  }} 
+                              />
+                           )
+                        });
+                    }
+                });
+            }
+
+            if (!hasCustomModuleCard) {
+                const path = reg.module.routes[0]?.path;
+                allModuleCards.push({
+                    order: 999, // default lowest priority
+                    node: (
+                        <TouchableOpacity
+                            key={`generic-${reg.module.id}`}
+                            onPress={() => {
+                                if (path) router.push(path as never);
+                            }}
+                            className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm w-full md:w-[calc(50%-12px)] lg:w-[calc(25%-18px)] flex flex-col"
+                        >
+                            <View className="w-12 h-12 rounded-xl items-center justify-center mb-4 bg-primary/10">
+                                <MaterialCommunityIcons name={reg.module.icon as any} size={28} color="#3713ec" />
+                            </View>
+                            <Text className="text-lg font-bold mb-1 text-slate-900">{reg.module.name}</Text>
+                            <View className="flex-1 min-h-[40px]" />
+                            <View className="mt-4 flex-row items-center justify-between">
+                                <View className="flex-row items-center gap-1">
+                                    <Text className="text-xs font-bold tracking-wide uppercase text-primary">
+                                        Open Module
+                                    </Text>
+                                    <MaterialCommunityIcons name="arrow-right" size={16} color="#3713ec" />
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    )
+                });
+            }
+        });
+
+        allMetricWidgets.sort((a, b) => a.order - b.order);
+        allModuleCards.sort((a, b) => a.order - b.order);
 
         return {
-            metricWidgets: allWidgets.filter(w => w.MetricCard).sort((a, b) => a.order - b.order),
-            moduleCards: allWidgets.filter(w => w.ModuleCard).sort((a, b) => a.order - b.order),
+            metricWidgets: allMetricWidgets.map(w => w.node),
+            moduleCards: allModuleCards.map(w => w.node),
         };
     }, [modules]);
 
@@ -51,10 +110,7 @@ export default function HomeScreen() {
             {/* Metrics Row — auto-discovered from accessible modules */}
             {metricWidgets.length > 0 && (
                 <View className="flex-row flex-wrap gap-4 mb-10">
-                    {metricWidgets.map(w => {
-                        const Card = w.MetricCard! as React.ComponentType;
-                        return <Card key={w.id} />;
-                    })}
+                    {metricWidgets}
                 </View>
             )}
 
@@ -65,17 +121,7 @@ export default function HomeScreen() {
 
             {moduleCards.length > 0 ? (
                 <View className="flex-row flex-wrap gap-4 md:gap-6 mb-12">
-                    {moduleCards.map(w => {
-                        const Card = w.ModuleCard! as React.ComponentType<{ onPress?: () => void }>;
-                        return (
-                            <Card
-                                key={w.id}
-                                onPress={() => {
-                                    if (w.modulePath) router.push(w.modulePath as never);
-                                }}
-                            />
-                        );
-                    })}
+                    {moduleCards}
                 </View>
             ) : (
                 <View className="items-center py-12 bg-white rounded-3xl border border-slate-200 mb-12">
