@@ -2,22 +2,15 @@
 export { OdooProvider, useOdooContext } from './providers/index.js';
 
 // Hooks
-export { useAuth, useUserGroups } from './hooks/index.js';
+export { useAuth, useUserGroups, useOdooErrorToast, mapOdooError } from './hooks/index.js';
+export type { OdooErrorToast } from './hooks/index.js';
+export { toast, type ToastMessage } from './toast.js';
 
 // Module System
 export { ModuleRegistry, useModules } from './modules/index.js';
 
-// Re-export essentials from lower packages
-export type {
-    OdooConnectionConfig,
-    AuthCredentials,
-    OdooSession,
-    OdooDomain,
-    SearchOptions,
-    PortalModule,
-    PortalRouteConfig,
-    ModuleRegistration,
-} from '@odoo-portal/types';
+// Internal Type Exports
+export type * from './types/module.js';
 
 export {
     OdooClient,
@@ -26,3 +19,5 @@ export {
     mapFromOdoo,
     getOdooFields,
 } from '@odoo-portal/odoo-client';
+
+export * from './utils.js';

@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { OdooProvider, ModuleRegistry, useAuth } from '@odoo-portal/core';
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
+import { OdooProvider, ModuleRegistry, useAuth, mapOdooError, toast, type ToastMessage } from '@odoo-portal/core';
 import { attendanceModule } from '@odoo-portal/attendance';
+import { settingsModule } from '@odoo-portal/settings';
 import { platformSessionStorage } from '~/lib/storage';
+import { Platform } from 'react-native';
 import { createOdooClient } from '~/lib/create-client';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, Animated } from 'react-native';
 import { MATERIAL_COMMUNITY_FONT_FAMILY, MATERIAL_COMMUNITY_FONT_DATA_URI } from '~/lib/material-community-font';
 
 import '../global.css';
@@ -39,13 +43,103 @@ if (typeof document !== 'undefined') {
 
 // ── Register feature modules (runs once at app start) ──────
 ModuleRegistry.register(attendanceModule);
+ModuleRegistry.register(settingsModule);
+
+// ── Custom Toast System ────────────────────────────
+
+function GlobalToastContainer() {
+    const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+    useEffect(() => {
+        return toast.subscribe((t) => {
+            setToasts((prev) => [...prev, t]);
+            setTimeout(() => {
+                setToasts((prev) => prev.filter((item) => item.id !== t.id));
+            }, 5000);
+        });
+    }, []);
+
+    if (toasts.length === 0) return null;
+
+    // Matches notification.html precisely: fixed top-20 right-6 z-50 flex flex-col gap-3 w-full max-w-sm
+    return (
+        <View
+            style={[
+                { position: 'absolute', zIndex: 1000, flexDirection: 'column', gap: 12 },
+                Platform.OS === 'web'
+                    ? { top: 80, right: 24, width: 384 }
+                    : { top: 60, alignSelf: 'center', width: '100%', maxWidth: 384, paddingHorizontal: 16 }
+            ]}
+            pointerEvents="box-none"
+        >
+            {toasts.map((t) => {
+                const isSuccess = t.type === 'success';
+                return (
+                    <View
+                        key={t.id}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'flex-start',
+                            gap: 16,
+                            padding: 16,
+                            borderRadius: 12,
+                            backgroundColor: isSuccess ? '#ecfdf5' : '#fef2f2',
+                            borderColor: isSuccess ? '#a7f3d0' : '#fecaca',
+                            borderWidth: 1,
+                            width: '100%',
+                            shadowColor: isSuccess ? '#065f46' : '#991b1b',
+                            shadowOpacity: 0.1,
+                            shadowRadius: 10,
+                            shadowOffset: { width: 0, height: 4 },
+                            elevation: 5
+                        }}
+                    >
+                        <View style={{ flexShrink: 0, backgroundColor: isSuccess ? '#10b981' : '#ef4444', borderRadius: 9999, height: 24, width: 24, alignItems: 'center', justifyContent: 'center' }}>
+                            <MaterialCommunityIcons name={isSuccess ? "check" : "close"} size={14} color="white" />
+                        </View>
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                            <Text style={{ color: isSuccess ? '#064e3b' : '#991b1b', fontSize: 14, fontWeight: 'bold' }}>{t.title}</Text>
+                            <Text style={{ color: isSuccess ? '#047857' : '#b91c1c', fontSize: 12, marginTop: 2 }}>{t.message}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setToasts((prev) => prev.filter((item) => item.id !== t.id))} hitSlop={10}>
+                            <MaterialCommunityIcons name="close" size={20} color={isSuccess ? '#34d399' : '#f87171'} style={{ opacity: 0.8 }} />
+                        </TouchableOpacity>
+                    </View>
+                );
+            })}
+        </View>
+    );
+}
+
+// ── Global Error Handler ───────────────────────────
+function handleGlobalError(error: unknown) {
+    console.error('Global Error Caught:', error);
+    toast.odooError(error);
+}
 
 // ── TanStack Query client ──────────────────────────
 const queryClient = new QueryClient({
+    queryCache: new QueryCache({
+        onError: handleGlobalError,
+    }),
+    mutationCache: new MutationCache({
+        onError: handleGlobalError,
+    }),
     defaultOptions: {
         queries: {
             staleTime: 1000 * 60 * 5,
-            retry: 2,
+            retry: (failureCount, error: Error & { name?: string }) => {
+                // Do not retry terminal Odoo application errors
+                if (
+                    error.name === 'RpcError' ||
+                    error.name === 'AccessDeniedError' ||
+                    error.name === 'SessionExpiredError'
+                ) {
+                    return false;
+                }
+                // Otherwise, standard exponential backoff retries for network glitches
+                return failureCount < 2;
+            },
             refetchOnWindowFocus: false,
         },
     },
@@ -101,6 +195,7 @@ export default function RootLayout() {
                     <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                     <Stack.Screen name="(app)" options={{ headerShown: false }} />
                 </Stack>
+                <GlobalToastContainer />
             </OdooProvider>
         </QueryClientProvider>
     );

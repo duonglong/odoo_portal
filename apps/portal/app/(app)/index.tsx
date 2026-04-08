@@ -1,12 +1,95 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
-import { router } from 'expo-router';
-import { useAuth, useModules } from '@odoo-portal/core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useAuth, useModules, useUserGroups } from '@odoo-portal/core';
 
+/**
+ * Home / Dashboard Screen
+ *
+ * Fully dynamic — auto-discovers dashboard widgets from accessible modules.
+ * Each user only sees widgets matching their Odoo groups:
+ *   - HR user → attendance metrics + card
+ *   - Sales user → sales metrics + card (when that module exists)
+ *   - Manager → everything
+ */
 export default function HomeScreen() {
-    const { session } = useAuth();
-    const modules = useModules();
+    const { session, client } = useAuth();
+    const userGroups = useUserGroups(client);
+    const modules = useModules(userGroups);
+
+    // Collect widgets from accessible modules, sorted by order
+    const { metricWidgets, moduleCards } = useMemo(() => {
+        const allMetricWidgets: { order: number; node: React.ReactNode }[] = [];
+        const allModuleCards: { order: number; node: React.ReactNode }[] = [];
+
+        modules.forEach(reg => {
+            let hasCustomModuleCard = false;
+            
+            if (reg.dashboardWidgets) {
+                reg.dashboardWidgets.forEach(w => {
+                    const path = reg.module.routes[0]?.path;
+                    if (w.MetricCard) {
+                        const Card = w.MetricCard as React.ComponentType;
+                        allMetricWidgets.push({ order: w.order, node: <Card key={`metric-${w.id}`} /> });
+                    }
+                    if (w.ModuleCard) {
+                        hasCustomModuleCard = true;
+                        const Card = w.ModuleCard as React.ComponentType<{ onPress?: () => void }>;
+                        allModuleCards.push({
+                           order: w.order,
+                           node: (
+                              <Card 
+                                  key={`module-${w.id}`} 
+                                  onPress={() => {
+                                      if (path) router.push(path as never);
+                                  }} 
+                              />
+                           )
+                        });
+                    }
+                });
+            }
+
+            if (!hasCustomModuleCard) {
+                const path = reg.module.routes[0]?.path;
+                allModuleCards.push({
+                    order: 999, // default lowest priority
+                    node: (
+                        <TouchableOpacity
+                            key={`generic-${reg.module.id}`}
+                            onPress={() => {
+                                if (path) router.push(path as never);
+                            }}
+                            className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm w-full md:w-[calc(50%-12px)] lg:w-[calc(25%-18px)] flex flex-col"
+                        >
+                            <View className="w-12 h-12 rounded-xl items-center justify-center mb-4 bg-primary/10">
+                                <MaterialCommunityIcons name={reg.module.icon as any} size={28} color="#3713ec" />
+                            </View>
+                            <Text className="text-lg font-bold mb-1 text-slate-900">{reg.module.name}</Text>
+                            <View className="flex-1 min-h-[40px]" />
+                            <View className="mt-4 flex-row items-center justify-between">
+                                <View className="flex-row items-center gap-1">
+                                    <Text className="text-xs font-bold tracking-wide uppercase text-primary">
+                                        Open Module
+                                    </Text>
+                                    <MaterialCommunityIcons name="arrow-right" size={16} color="#3713ec" />
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    )
+                });
+            }
+        });
+
+        allMetricWidgets.sort((a, b) => a.order - b.order);
+        allModuleCards.sort((a, b) => a.order - b.order);
+
+        return {
+            metricWidgets: allMetricWidgets.map(w => w.node),
+            moduleCards: allModuleCards.map(w => w.node),
+        };
+    }, [modules]);
 
     return (
         <ScrollView
@@ -19,85 +102,25 @@ export default function HomeScreen() {
                     Welcome back, {session?.name?.split(' ')[0] ?? 'User'}
                 </Text>
                 <Text className="text-slate-500 mt-1 md:text-base">
-                    Your organization overview for today. You have <Text className="text-odoo-primary font-bold">— items</Text> requiring attention.
+                    Your organization overview for today.
                 </Text>
             </View>
 
-            {/* Metrics Row */}
-            <View className="flex-row flex-wrap gap-4 mb-10">
-                <MetricCard title="Hours Today" value="—" />
-                <MetricCard title="Monthly Sales" value="—" />
-                <MetricCard title="Pending Tasks" value="—" valueColor="text-odoo-primary" />
-                <MetricCard title="System Status" value="—" valueColor="text-emerald-600" />
-            </View>
+            {/* Metrics Row — auto-discovered from accessible modules */}
+            {metricWidgets.length > 0 && (
+                <View className="flex-row flex-wrap gap-4 mb-10">
+                    {metricWidgets}
+                </View>
+            )}
 
-            {/* Modules Section */}
+            {/* Module Cards — auto-discovered from accessible modules */}
             <View className="flex-row items-center justify-between mb-5">
                 <Text className="text-lg md:text-xl font-bold text-slate-900">Your Modules</Text>
-                <TouchableOpacity>
-                    <Text className="text-odoo-primary text-sm font-bold">Customize Dashboard</Text>
-                </TouchableOpacity>
             </View>
 
-            {modules.length > 0 ? (
+            {moduleCards.length > 0 ? (
                 <View className="flex-row flex-wrap gap-4 md:gap-6 mb-12">
-                    {modules.map((reg) => {
-                        const isAttendance = reg.module.name.toLowerCase().includes('attendance');
-                        const isSales = reg.module.name.toLowerCase().includes('sale');
-
-                        // Layout config for design match, values are empty
-                        const config = isAttendance ? {
-                            icon: 'timer-outline' as any,
-                            bgColor: 'bg-primary/10',
-                            iconColor: '#3713ec',
-                            textColor: 'text-primary',
-                            metricHtml: <Text className="text-sm text-slate-500">Checked in at <Text className="text-slate-900 font-bold">—</Text></Text>,
-                            subtext: 'Shift: —',
-                            action: 'Open Module',
-                        } : isSales ? {
-                            icon: 'cart-outline' as any,
-                            bgColor: 'bg-amber-500/10',
-                            iconColor: '#f59e0b',
-                            textColor: 'text-amber-600',
-                            metricHtml: <Text className="text-sm text-slate-900 font-bold">— Active Orders</Text>,
-                            subtext: 'Total pipeline: —',
-                            action: 'Manage Sales',
-                        } : {
-                            icon: 'cube-outline' as any,
-                            bgColor: 'bg-indigo-500/10',
-                            iconColor: '#6366f1',
-                            textColor: 'text-indigo-600',
-                            metricHtml: <Text className="text-sm text-slate-500">—</Text>,
-                            subtext: '—',
-                            action: 'Open Module',
-                        };
-
-                        return (
-                            <TouchableOpacity
-                                key={reg.module.id}
-                                onPress={() => {
-                                    const firstRoute = reg.module.routes[0];
-                                    if (firstRoute) router.push(firstRoute.path as never);
-                                }}
-                                className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm w-full md:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
-                            >
-                                <View className={`w-12 h-12 rounded-xl items-center justify-center mb-4 ${config.bgColor}`}>
-                                    <MaterialCommunityIcons name={config.icon} size={28} color={config.iconColor} />
-                                </View>
-                                <Text className="text-lg font-bold mb-1 text-slate-900">{reg.module.name}</Text>
-                                <View className="gap-0.5">
-                                    {config.metricHtml}
-                                    <Text className="text-xs text-slate-400">{config.subtext}</Text>
-                                </View>
-                                <View className="mt-6 flex-row items-center gap-1">
-                                    <Text className={`text-xs font-bold tracking-wide uppercase ${config.textColor}`}>
-                                        {config.action}
-                                    </Text>
-                                    <MaterialCommunityIcons name="arrow-right" size={16} color={config.iconColor} />
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    })}
+                    {moduleCards}
                 </View>
             ) : (
                 <View className="items-center py-12 bg-white rounded-3xl border border-slate-200 mb-12">
@@ -108,88 +131,17 @@ export default function HomeScreen() {
                 </View>
             )}
 
-            {/* Recent Activity Section */}
-            <View className="mb-12">
-                <View className="flex-row items-center justify-between mb-5">
-                    <Text className="text-lg md:text-xl font-bold text-slate-900">Recent Activity</Text>
-                    <TouchableOpacity className="bg-slate-100 px-4 py-2 rounded-xl">
-                        <Text className="text-slate-700 text-sm font-bold">View Logs</Text>
-                    </TouchableOpacity>
+            {/* Recent Activity — future: modules will contribute activity items */}
+            {Platform.OS === 'web' && (
+                <View className="mb-12">
+                    <View className="flex-row items-center justify-between mb-5">
+                        <Text className="text-lg md:text-xl font-bold text-slate-900">Recent Activity</Text>
+                    </View>
+                    <View className="items-center py-8 bg-white rounded-3xl border border-slate-200 opacity-50">
+                        <Text className="text-slate-500 text-sm">Activity feed coming soon</Text>
+                    </View>
                 </View>
-
-                {Platform.OS === 'web' ? (
-                    /* Web Table View */
-                    <View className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
-                        <View className="flex-row border-b border-slate-200 bg-slate-50 py-4 px-6">
-                            <Text className="flex-1 text-xs font-bold uppercase text-slate-500 tracking-wider">Module</Text>
-                            <Text className="flex-2 text-xs font-bold uppercase text-slate-500 tracking-wider">Description</Text>
-                            <Text className="flex-1 text-xs font-bold uppercase text-slate-500 tracking-wider">User</Text>
-                            <Text className="flex-1 text-xs font-bold uppercase text-slate-500 tracking-wider">Time</Text>
-                            <Text className="flex-[0.5] text-xs font-bold uppercase text-slate-500 tracking-wider text-right">Status</Text>
-                        </View>
-
-                        <ActivityRow module="—" dot="bg-slate-200" desc="—" user="—" time="—" status="—" statusColor="text-slate-400" statusBg="bg-slate-50" />
-                        <ActivityRow module="—" dot="bg-slate-200" desc="—" user="—" time="—" status="—" statusColor="text-slate-400" statusBg="bg-slate-50" />
-                        <ActivityRow module="—" dot="bg-slate-200" desc="—" user="—" time="—" status="—" statusColor="text-slate-400" statusBg="bg-slate-50" />
-                    </View>
-                ) : (
-                    /* Mobile Card View */
-                    <View className="gap-3">
-                        <ActivityCard module="—" dot="bg-slate-200" desc="—" time="—" status="—" statusColor="text-slate-400" statusBg="bg-slate-50" />
-                        <ActivityCard module="—" dot="bg-slate-200" desc="—" time="—" status="—" statusColor="text-slate-400" statusBg="bg-slate-50" />
-                        <ActivityCard module="—" dot="bg-slate-200" desc="—" time="—" status="—" statusColor="text-slate-400" statusBg="bg-slate-50" />
-                    </View>
-                )}
-            </View>
-
+            )}
         </ScrollView>
-    );
-}
-
-// Subcomponents
-
-function MetricCard({ title, value, valueColor = 'text-slate-900' }: { title: string, value: string, valueColor?: string }) {
-    return (
-        <View className="bg-white p-5 rounded-3xl border border-slate-200 flex-1 min-w-[140px] md:min-w-[200px] shadow-sm">
-            <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</Text>
-            <Text className={`text-2xl md:text-3xl font-extrabold mt-2 ${valueColor}`}>{value}</Text>
-        </View>
-    );
-}
-
-function ActivityRow({ module, dot, desc, user, time, status, statusColor, statusBg }: any) {
-    return (
-        <View className="flex-row items-center border-b border-slate-100 py-4 px-6 hover:bg-slate-50 transition-colors">
-            <View className="flex-1 flex-row items-center gap-2">
-                <View className={`w-2 h-2 rounded-full ${dot}`} />
-                <Text className="text-sm font-bold text-slate-900">{module}</Text>
-            </View>
-            <View className="flex-2"><Text className="text-sm text-slate-600 font-bold">{desc}</Text></View>
-            <View className="flex-1"><Text className="text-sm text-slate-600">{user}</Text></View>
-            <View className="flex-1"><Text className="text-sm text-slate-500">{time}</Text></View>
-            <View className="flex-[0.5] items-end">
-                <View className={`px-2 py-1 rounded bg-emerald-100 ${statusBg}`}>
-                    <Text className={`text-[10px] font-extrabold uppercase tracking-tighter ${statusColor}`}>{status}</Text>
-                </View>
-            </View>
-        </View>
-    );
-}
-
-function ActivityCard({ module, dot, desc, time, status, statusColor, statusBg }: any) {
-    return (
-        <View className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex-row items-center justify-between">
-            <View className="flex-1">
-                <View className="flex-row items-center gap-2 mb-1">
-                    <View className={`w-2 h-2 rounded-full ${dot}`} />
-                    <Text className="text-xs font-bold text-slate-500">{module}</Text>
-                    <Text className="text-xs text-slate-400">• {time}</Text>
-                </View>
-                <Text className="text-sm text-slate-900 font-bold pr-2">{desc}</Text>
-            </View>
-            <View className={`px-2 py-1 rounded ${statusBg}`}>
-                <Text className={`text-[10px] font-extrabold uppercase tracking-tighter ${statusColor}`}>{status}</Text>
-            </View>
-        </View>
     );
 }

@@ -1,4 +1,4 @@
-import type { ModuleRegistration } from '@odoo-portal/types';
+import type { ModuleRegistration } from '@odoo-portal/core';
 
 /**
  * Registry for portal feature modules.
@@ -22,6 +22,17 @@ class ModuleRegistryImpl {
     /** Get all registered modules */
     getAll(): ModuleRegistration[] {
         return Array.from(this.modules.values());
+    }
+
+    /** Get all unique required groups across all registered modules */
+    getAllRequiredGroups(): string[] {
+        const groups = new Set<string>();
+        for (const reg of this.modules.values()) {
+            if (reg.module.requiredGroups) {
+                reg.module.requiredGroups.forEach((g) => groups.add(g));
+            }
+        }
+        return Array.from(groups);
     }
 
     /**

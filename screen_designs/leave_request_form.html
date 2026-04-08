@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Leave Request | Odoo Portal</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 lg:px-20">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-6">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Odoo Portal</h2>
+</div>
+<nav class="hidden md:flex items-center gap-9">
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-semibold leading-normal" href="#">My Requests</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Approvals</a>
+<a class="text-slate-600 dark:text-slate-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Employees</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<label class="hidden sm:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-slate-500 flex border-none bg-slate-100 dark:bg-slate-800 items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined text-lg">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-slate-100 dark:bg-slate-800 focus:border-none h-full placeholder:text-slate-500 px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search" value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600">
+<img alt="" class="w-full h-full object-cover" data-alt="Corporate employee profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHKA7k5xUo8CWsJTdjj7Qw6JUVHqHGCatN_e6999Rynvp-O7A8AeUGL6cB-vOBwI7iFQ4x9brG_mSiAjoVzs6d2fLMVPCfWYztYBHchYS5RoxtIApZ3YWD55fMjIZLVA2y_0x_rTZXn6xb3wO2DKeYSTNefX64a8I5g_vaJTbeZRpVBxWznNj9N-bDTJ-MZE-ly1XefIdR8Y1tPPH-cM_j1nHzmabs2k0X-eyCFK1bfGj2OanWYvoWBdC_OO_zbPqphWCi7vQ6MM4"/>
+</div>
+</div>
+</header>
+<main class="flex-1 px-6 py-8 lg:px-20">
+<div class="max-w-[1200px] mx-auto">
+<nav class="flex items-center gap-2 text-sm mb-6 text-slate-500">
+<a class="hover:text-primary" href="#">Home</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<a class="hover:text-primary" href="#">Leave Management</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-slate-900 dark:text-white font-medium">New Request</span>
+</nav>
+<div class="mb-8">
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Request Leave</h1>
+<p class="text-slate-600 dark:text-slate-400 mt-1">Plan your time off and sync with your team.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+<div class="lg:col-span-2 space-y-6">
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+<h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_document</span>
+                                    Request Details
+                                </h2>
+<form class="space-y-6">
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Leave Type</label>
+<div class="relative">
+<select class="form-select w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:border-primary focus:ring-primary/20 h-12">
+<option>Paid Time Off (Annual Leave)</option>
+<option>Sick Leave</option>
+<option>Unpaid Leave</option>
+<option>Compensatory Days</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Start Date</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">calendar_today</span>
+<input class="form-input w-full pl-11 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary/20 h-12" type="date" value="2023-11-20"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">End Date</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">calendar_today</span>
+<input class="form-input w-full pl-11 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary/20 h-12" type="date" value="2023-11-24"/>
+</div>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Description</label>
+<textarea class="form-textarea w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 placeholder:text-slate-400 focus:border-primary focus:ring-primary/20" placeholder="Optional: Brief reason for leave or handover notes..." rows="4"></textarea>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10">
+<span class="material-symbols-outlined text-primary">info</span>
+<p class="text-sm text-slate-700 dark:text-slate-300">
+                                            You are requesting <span class="font-bold text-primary">5 working days</span> off.
+                                        </p>
+</div>
+<div class="flex items-center justify-end gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+<button class="px-6 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" type="button">Discard</button>
+<button class="px-8 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg transition-shadow shadow-lg shadow-primary/20" type="submit">Submit Request</button>
+</div>
+</form>
+</div>
+</div>
+<div class="space-y-6">
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<h3 class="text-base font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">account_balance_wallet</span>
+                                    Your Leave Balances
+                                </h3>
+<div class="space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="text-slate-600 dark:text-slate-400">Paid Time Off</span>
+<span class="font-bold">12 / 15 days</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 80%"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="text-slate-600 dark:text-slate-400">Sick Leave</span>
+<span class="font-bold">8 / 10 days</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500" style="width: 80%"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="text-slate-600 dark:text-slate-400">Compensatory</span>
+<span class="font-bold">2 / 2 days</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-amber-500" style="width: 100%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<h3 class="text-base font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-xl">calendar_month</span>
+        My Schedule
+    </h3>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-lg">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-slate-900 dark:text-white truncate">Winter Vacation</p>
+<p class="text-xs text-slate-500">Nov 27 - Nov 30</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 uppercase">Approved</span>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+<div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
+<span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center">
+<span class="p-1.5 text-xs text-slate-300">26</span>
+<span class="p-1.5 text-xs bg-indigo-600 text-white rounded-full font-bold">27</span>
+<span class="p-1.5 text-xs bg-indigo-600 text-white rounded-full font-bold">28</span>
+<span class="p-1.5 text-xs bg-indigo-600 text-white rounded-full font-bold">29</span>
+<span class="p-1.5 text-xs bg-indigo-600 text-white rounded-full font-bold">30</span>
+<span class="p-1.5 text-xs text-slate-400">01</span>
+<span class="p-1.5 text-xs text-slate-400">02</span>
+</div>
+</div>
+</div><div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<h3 class="text-base font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">group</span>
+                                    Who's Out (Team)
+                                </h3>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="Female team member portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCj3zdGu-j7pzREE-_Rj5IKvz2I6hk0THosNTSAn6XL6Q2aMOBKqmUqqq7M5Y9oH2tpFfzTmRzRaWbnVTzCeu2D8OGSwNbJvGTF6gxf5IQPLwKytd-eHh1L3nUA5sO5aRNsBR2955aGqQEILt-JHfCsJTMo83LH063yF2V73-ys0pYc5rctdJysfM-P-vEM6bB_VTaiM_bxu20D6Ml1mE53_ML2s1UDAKfGtJORfOMIegs7pQlZvaaJt1OLQpUcvrKbCf-z6y7Me3c"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-slate-900 dark:text-white truncate">Sarah Jenkins</p>
+<p class="text-xs text-slate-500">Nov 20 - Nov 22</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase">Conflict</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="Male team member portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFv9nFDSKUoTZvKZDWA9sI8EyKlwUUMdF824kP3LzE5h-agjWVS6eh34zT05W1QMF_jUzGS80Oa6lLQKyL_H450pdGsLYCWL5_04QedFfLjpPXwS9TFgsdITLfHFYIEYiN2FXBNoJJOGTq6MACml3xAnfdzczONx72LvGf-IuFBNsXhreazRiGevWtxUSF-rNqodPVLTMz1e0KVREZis2ljkkSWNxoY7zuuQnRj8VN7Mwr6PlRmEAZs1Pg67RsO2YZCh8geWm40ss"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-slate-900 dark:text-white truncate">Michael Chen</p>
+<p class="text-xs text-slate-500">Nov 24 - Nov 28</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase">Upcoming</span>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+<div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
+<span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center">
+<span class="p-1.5 text-xs text-slate-300">19</span>
+<span class="p-1.5 text-xs bg-primary/20 text-primary rounded-full font-bold">20</span>
+<span class="p-1.5 text-xs bg-primary/20 text-primary rounded-full font-bold">21</span>
+<span class="p-1.5 text-xs bg-primary/20 text-primary rounded-full font-bold">22</span>
+<span class="p-1.5 text-xs bg-primary/20 text-primary rounded-full font-bold">23</span>
+<span class="p-1.5 text-xs bg-primary/20 text-primary rounded-full font-bold">24</span>
+<span class="p-1.5 text-xs text-slate-400">25</span>
+</div>
+<p class="text-[11px] text-slate-500 mt-4 text-center italic">
+                                        High conflict on Nov 20-22. Consider adjusting dates.
+                                    </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

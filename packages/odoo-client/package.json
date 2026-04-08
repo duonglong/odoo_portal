@@ -14,9 +14,6 @@
         "test:watch": "vitest",
         "clean": "rm -rf dist"
     },
-    "dependencies": {
-        "@odoo-portal/types": "workspace:*"
-    },
     "devDependencies": {
         "typescript": "^5.7.0",
         "vitest": "^3.0.0"

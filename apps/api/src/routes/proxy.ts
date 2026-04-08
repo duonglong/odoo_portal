@@ -8,74 +8,81 @@ const proxyRouter = new Hono();
 proxyRouter.use('*', jwtMiddleware);
 
 /**
- * POST /proxy
+ * POST /proxy/jsonrpc
  * Header: Authorization: Bearer <token>
  *
- * Body: { endpoint: string, params: Record<string, unknown> }
+ * Body: {
+ *   model: string,
+ *   method: string,
+ *   args?: unknown[],
+ *   kwargs?: Record<string, unknown>
+ * }
  *
- * Forwards a JSON-RPC call to the user's Odoo instance using
- * their server-side session cookie, then returns the raw response.
- *
- * The client builds exactly the same request body it would have
- * sent to Odoo directly — this route just adds the cookie and
- * handles the server-to-server hop.
+ * Forwards a generic Odoo call to the stateless External API (/jsonrpc).
+ * The proxy injects the user's `uid` and `password` (API Key) from the
+ * server-side store so the frontend never sees them.
  */
-proxyRouter.post('/', async (c) => {
+proxyRouter.post('/jsonrpc', async (c) => {
     const jti = c.get('jti');
     const session = sessionStore.get(jti);
 
     if (!session) {
-        // This shouldn't happen because jwtMiddleware already checked,
-        // but guard defensively.
         return c.json({ error: 'Session expired. Please log in again.' }, 401);
     }
 
-    let body: { endpoint?: string; params?: Record<string, unknown> };
+    let body: {
+        model?: string;
+        method?: string;
+        args?: unknown[];
+        kwargs?: Record<string, unknown>;
+    };
     try {
         body = await c.req.json();
     } catch {
         return c.json({ error: 'Invalid JSON body' }, 400);
     }
 
-    const { endpoint, params } = body;
-    if (!endpoint || typeof endpoint !== 'string') {
-        return c.json({ error: '"endpoint" is required (e.g. "/web/dataset/call_kw")' }, 400);
+    const { model, method, args = [], kwargs = {} } = body;
+
+    if (!model || !method) {
+        return c.json({ error: 'model and method are required' }, 400);
     }
 
-    const odooUrl = `${session.odooUrl}${endpoint}`;
+    const odooUrl = `${session.odooUrl}/jsonrpc`;
 
     const rpcBody = {
         jsonrpc: '2.0',
         method: 'call',
-        id: Date.now(),
-        params: params ?? {},
+        id: crypto.randomUUID(),
+        params: {
+            service: 'object',
+            method: 'execute_kw',
+            args: [
+                session.database,
+                session.uid,
+                session.password, // Injected securely by proxy
+                model,
+                method,
+                args,
+                kwargs,
+            ],
+        },
     };
 
     let odooResponse: Response;
     try {
+        console.log(`[PROXY] Fetching stateless: ${odooUrl} (Model: ${model}, Method: ${method})`);
         odooResponse = await fetch(odooUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Cookie: session.odooCookieValue,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
             },
             body: JSON.stringify(rpcBody),
         });
     } catch (err) {
         return c.json({ error: `Failed to reach Odoo: ${String(err)}` }, 502);
-    }
-
-    // Refresh the session cookie if Odoo rotated it
-    const setCookie = odooResponse.headers.get('set-cookie');
-    if (setCookie) {
-        const match = setCookie.match(/session_id=([^;]+)/);
-        if (match?.[1]) {
-            const updated = sessionStore.get(jti);
-            if (updated) {
-                updated.odooCookieValue = `session_id=${match[1]}`;
-                sessionStore.set(jti, updated);
-            }
-        }
     }
 
     // Stream the Odoo response body back to the client as-is
@@ -85,5 +92,7 @@ proxyRouter.post('/', async (c) => {
         'Content-Type': 'application/json',
     });
 });
+
+
 
 export { proxyRouter };

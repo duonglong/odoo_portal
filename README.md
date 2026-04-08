@@ -1,8 +1,9 @@
 # Odoo Portal Framework
 
+
 A modular, cross-platform portal for **Odoo 19** built with Expo, TypeScript, and a plug-in module architecture.
 
-> **Status:** Phases 1–3 complete. Foundation, core React layer, and the attendance module are implemented and type-checked.
+> **Status:** Foundation, core React layer, and the attendance module are implemented and type-checked. The attendance module includes a daily-log timeline, a monthly calendar view, a history screen, and a working clock-in / clock-out integration with Odoo 19.
 
 ---
 
@@ -18,7 +19,7 @@ A modular, cross-platform portal for **Odoo 19** built with Expo, TypeScript, an
 ```bash
 pnpm install                # install all workspace dependencies
 pnpm turbo typecheck        # verify types across all packages (0 errors expected)
-pnpm turbo test             # run unit tests (18 passing expected)
+pnpm turbo test             # run unit tests
 ```
 
 ### Run the app
@@ -73,13 +74,12 @@ To build standalone standalone apps (`.apk`, `.aab`, or `.ipa`) for devices, you
 │       (Self-contained feature — see Module Guide)    │
 ├─────────────────────────────────────────────────────┤
 │               packages/core (React layer)            │
-│  OdooProvider · useAuth · useOdooQuery · ModuleRegistry│
+│  OdooProvider · useAuth · toast · ModuleRegistry     │
+│  PortalModule types                                  │
 ├─────────────────────────────────────────────────────┤
 │             packages/odoo-client (protocol)          │
 │    JSON-RPC transport · OdooClient · Field Mapper    │
-├─────────────────────────────────────────────────────┤
-│             packages/types (contracts)               │
-│  OdooSession · FieldMap · PortalModule · Repository  │
+│    OdooSession · FieldMap types                      │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -87,10 +87,9 @@ To build standalone standalone apps (`.apk`, `.aab`, or `.ipa`) for devices, you
 
 | Layer | Knows about | Never imports |
 |-------|------------|---------------|
-| `types` | Nothing | — |
-| `odoo-client` | `types` | React, UI |
-| `core` | `types`, `odoo-client` | Expo, modules |
-| `modules/*` | `types`, `odoo-client`, `core` | Other modules |
+| `odoo-client` | Nothing | React, UI |
+| `core` | `odoo-client` | Expo, modules |
+| `modules/*` | `odoo-client`, `core` | Other modules |
 | `apps/portal` | Everything | — |
 
 ---
@@ -140,7 +139,7 @@ Thin React wrappers around the repository using **TanStack Query**. They add:
 // modules/attendance/src/hooks.ts
 export const useAttendanceRecords = (client, employeeId) =>
     useQuery({
-        queryKey: ['attendance', employeeId],
+        queryKey: ['attendance', 'records', employeeId],
         queryFn: () => new AttendanceRepository(client).getTodayAttendance(employeeId),
     });
 ```
@@ -163,10 +162,8 @@ const today = records.filter(r => r.checkIn.startsWith(new Date().toISOString().
 ```
 odoo_portal/
 ├── packages/
-│   ├── types/              ← Shared TypeScript interfaces (no runtime deps)
-│   ├── odoo-client/        ← JSON-RPC + BFF proxy client, auth, CRUD, field mapper
-│   └── core/               ← React providers, hooks, module registry, connection store
-│                              (pure logic — no UI components)
+│   ├── odoo-client/        ← JSON-RPC + BFF proxy client, auth, CRUD, field mapper, base types
+│   └── core/               ← React providers, hooks, module registry, connection store, plugin types
 ├── modules/
 │   └── attendance/         ← Attendance feature module
 │       └── src/
@@ -174,12 +171,13 @@ odoo_portal/
 │           ├── mappings.ts
 │           ├── repository.ts
 │           ├── hooks.ts
+│           ├── utils.ts
 │           ├── module.ts
 │           ├── index.ts
 │           └── screens/
-│               ├── AttendanceSummaryScreen.tsx  ← Dashboard with timeline & stats
-│               ├── ClockScreen.tsx
-│               └── HistoryScreen.tsx
+│               ├── AttendanceSummaryScreen.tsx  ← Daily log timeline + clock-in/out
+│               ├── MyAttendanceScreen.tsx        ← Monthly calendar + stats
+│               └── HistoryScreen.tsx             ← Paginated attendance history
 ├── apps/
 │   ├── api/                ← Hono BFF proxy (resolves web CORS, holds Odoo session)
 │   └── portal/             ← Expo universal app (iOS, Android, Web)
@@ -189,11 +187,14 @@ odoo_portal/
 │       └── app/            ← Expo Router file-system routes (thin entry points)
 │           ├── _layout.tsx
 │           ├── (auth)/
-│           │   └── login.tsx        ← 1 line: re-exports LoginScreen
+│           │   └── login.tsx           ← 1 line: re-exports LoginScreen
 │           └── (app)/
-│               ├── _layout.tsx      ← Auth guard + nav shell
-│               ├── index.tsx        ← Dashboard
-│               └── attendance.tsx   ← 1 line: re-exports AttendanceSummaryScreen
+│               ├── _layout.tsx         ← Auth guard + nav shell
+│               ├── index.tsx           ← Dashboard
+│               ├── attendance.tsx      ← re-exports AttendanceSummaryScreen
+│               └── attendance/
+│                   ├── history.tsx     ← re-exports HistoryScreen
+│                   └── my-attendance.tsx ← re-exports MyAttendanceScreen
 ├── turbo.json              ← Turborepo task pipeline
 ├── pnpm-workspace.yaml     ← Workspace config
 └── tsconfig.base.json      ← Strict TS shared config
@@ -246,9 +247,9 @@ Only modules matching the user's Odoo groups appear in navigation
 ### 4. Data Fetching
 
 All data flows through **TanStack Query v5**:
-- `useOdooQuery()` — searchRead with auto caching
-- `useOdooCreate/Update/Delete()` — mutations that auto-invalidate related queries
-- `useOdooCall()` — escape hatch for any custom Odoo method
+- `useQuery()` — data fetching with auto caching (via repository methods)
+- `useMutation()` — mutations (e.g. `useCheckInOut`) that auto-invalidate related queries
+- Repository methods are the single source of truth for query functions
 
 ---
 
@@ -258,7 +259,7 @@ All data flows through **TanStack Query v5**:
 
 ```
 modules/my-feature/
-├── package.json          ← Workspace deps: core, types, odoo-client
+├── package.json          ← Workspace deps: core, odoo-client
 ├── tsconfig.json
 ├── nativewind-env.d.ts   ← NativeWind className types
 └── src/
@@ -292,7 +293,7 @@ export interface SaleOrder {
 
 ```typescript
 // src/mappings.ts
-import type { FieldMap } from '@odoo-portal/types';
+import type { FieldMap } from '@odoo-portal/odoo-client';
 
 export const saleOrderFieldMap: FieldMap = {
   id:          'id',
@@ -367,7 +368,7 @@ export default function OrderListScreen() {
 
 ```typescript
 // src/module.ts
-import type { ModuleRegistration } from '@odoo-portal/types';
+import type { ModuleRegistration } from '@odoo-portal/core';
 
 export const salesModule: ModuleRegistration = {
   module: {
@@ -406,6 +407,66 @@ That's it. The tab navigator auto-discovers the module if the user has the requi
 
 ---
 
+### ⚡ Scaffold a Module (faster alternative)
+
+Instead of creating all 9 files manually, run the scaffold command from the repo root:
+
+```bash
+pnpm new-module <slug> "Display Name"
+
+# Example
+pnpm new-module sales "Sales Orders"
+```
+
+This generates `modules/sales/` with all boilerplate wired up correctly:
+
+```
+modules/sales/
+├── package.json              ← workspace pkg, correct deps
+├── tsconfig.json             ← extends tsconfig.base.json
+├── nativewind-env.d.ts       ← NativeWind className support
+└── src/
+    ├── types.ts              ← SalesRecord interface
+    ├── mappings.ts           ← salesFieldMap (camelCase → Odoo)
+    ├── repository.ts         ← SalesRepository.list()
+    ├── hooks.ts              ← useSalesRecords() TanStack hook
+    ├── module.ts             ← salesModule registration
+    ├── index.ts              ← full public barrel
+    ├── screens/
+    │   └── MainScreen.tsx    ← working FlatList screen
+    └── widgets/
+        └── SalesModuleCard.tsx
+```
+
+After scaffolding, fill in **4 TODOs** and wire it up:
+
+| File | What to fill in |
+|---|---|
+| `types.ts` | Add domain fields |
+| `mappings.ts` | Map to real Odoo field names |
+| `repository.ts` | Set `MODEL` constant (e.g. `'sale.order'`) |
+| `module.ts` | Set `requiredModels`, `requiredGroups`, pick an icon |
+
+Then wire into the app (the script prints the exact commands):
+
+```bash
+# 1. Link the workspace package
+pnpm install
+
+# 2. Add to apps/portal/package.json → dependencies
+"@odoo-portal/sales": "workspace:*"
+
+# 3. Register in apps/portal/app/_layout.tsx
+import { salesModule } from '@odoo-portal/sales';
+ModuleRegistry.register(salesModule);
+
+# 4. Create the Expo Router entry point
+# apps/portal/app/(app)/sales.tsx
+export { SalesMainScreen as default } from '@odoo-portal/sales';
+```
+
+---
+
 ## The PortalModule Contract
 
 ```typescript
@@ -432,27 +493,6 @@ interface ModuleRegistration {
 ```
 
 ---
-
-## Data Flow
-
-```
-User taps "Check In"
-       │
-       ▼
-ClockScreen (React)
-  └─ useCheckInOut()       ← TanStack Query mutation hook
-       └─ AttendanceRepository.checkInOut()
-            └─ OdooClient.callKw('hr.employee', 'attendance_manual', ...)
-                 └─ JsonRpcTransport.call()
-                      └─ fetch('https://odoo.example.com/web/dataset/call_kw', ...)
-                           └─ JSON-RPC 2.0 request
-       │
-       ▼ on success
-TanStack Query invalidates ['attendance', 'employee'] + ['attendance', 'records']
-       │
-       ▼
-ClockScreen re-renders with updated attendance state
-```
 
 ---
 
@@ -498,7 +538,7 @@ A client adds custom fields `x_location` and `x_project_id` to `hr.attendance`:
 
 ```typescript
 import { attendanceFieldMap } from '@odoo-portal/attendance';
-import type { FieldMap } from '@odoo-portal/types';
+import type { FieldMap } from '@odoo-portal/odoo-client';
 
 const extendedFieldMap: FieldMap = {
   ...attendanceFieldMap,          // inherit all standard fields
@@ -712,7 +752,7 @@ Every `@odoo-portal/*` package that the portal app imports **must** be listed in
     "@odoo-portal/attendance": "workspace:*",   // ← don't forget!
     "@odoo-portal/core": "workspace:*",
     "@odoo-portal/odoo-client": "workspace:*",  // ← don't forget!
-    "@odoo-portal/types": "workspace:*",
+    // ...
     // ...
 }
 ```
@@ -809,15 +849,15 @@ These are **optional** — the login screen lets users enter any URL at runtime.
 
 The Expo **web** build cannot call Odoo's JSON-RPC API directly from the browser — the browser blocks cross-origin requests (CORS) unless Odoo is configured to allow your portal's origin. Asking every customer to change their Odoo CORS settings is impractical.
 
-`apps/api` is a thin Hono server that sits between the web app and Odoo:
+`apps/api` is a thin Hono server that sits between the client applications and Odoo:
 
 ```
-Browser (web)  →  apps/api (proxy)  →  Odoo  (server-to-server, no CORS)
+Portal Apps (Web, Mobile)  →  apps/api (proxy)  →  Odoo  (server-to-server)
 ```
 
-- The proxy authenticates with Odoo and stores the session **server-side** (browser never sees the Odoo cookie)
-- Issues a short-lived **JWT** to the web app instead
-- **Mobile (native) apps bypass the proxy entirely** — native apps have no CORS restriction
+- The proxy authenticates with Odoo and stores the session **server-side** (browser never sees the Odoo credentials)
+- Issues a short-lived **JWT** to the portal apps instead
+- Provides a consistent API layer for all platforms using Odoo's stateless External API
 
 ### Running the proxy
 
@@ -851,7 +891,7 @@ node dist/index.js
 | `GET` | `/health` | Health check |
 | `POST` | `/auth/login` | Authenticate → returns JWT |
 | `POST` | `/auth/logout` | Invalidate session |
-| `POST` | `/proxy` | Forward any Odoo JSON-RPC call (JWT required) |
+| `POST` | `/proxy/jsonrpc` | Forward any Odoo JSON-RPC call (JWT required) |
 
 ### Deployment
 
@@ -871,6 +911,26 @@ EXPO_PUBLIC_API_URL=https://api.yourportal.example.com
 ```
 
 Defaults to `http://localhost:3001` for local development.
+
+---
+
+## VS Code Debugging
+
+
+1. **Debug API (Hono Backend):** 
+   - Open the VS Code "Run and Debug" panel (Cmd/Ctrl + Shift + D).
+   - Select **Debug API (Hono Backend)** and hit play. This will launch the `tsx watch` process for the BFF API and attach the debugger.
+   - You can now place breakpoints in `apps/api/src/**/*.ts`.
+
+2. **Debug Portal (Expo Web):**
+   - In your terminal, make sure the Expo server is running (`cd apps/portal && pnpm start` and hit `w`).
+   - From the VS Code "Run and Debug" panel, select **Debug Portal (Expo Web)**. This will launch a new Chrome window attached to the debugger.
+   - You can place breakpoints in any `apps/portal` or `modules/**` file.
+
+3. **Debug Full Stack (API + Web):**
+   - Select the **Debug Full Stack (API + Web)** compound to launch both the API and Web debuggers simultaneously. 
+
+*Note: To debug Expo Mobile (iOS/Android), you must install the official **Expo Tools** extension in VS Code and use the **Debug Portal (Expo Mobile)** configuration while the Expo server is running.*
 
 ---
 

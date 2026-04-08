@@ -3,8 +3,7 @@ export { OdooClient } from './odoo-client.js';
 export type { OdooClientOptions } from './odoo-client.js';
 
 // Transport
-export { JsonRpcTransport } from './json-rpc-transport.js';
-export { ProxyTransport } from './proxy-transport.js';
+export { ApiTransport } from './api-transport.js';
 
 // Session
 export { InMemorySessionStorage } from './session-storage.js';
@@ -26,3 +25,8 @@ export {
     getOdooFields,
 } from './mappers/index.js';
 
+// Types
+export type * from './types/domain.js';
+export type * from './types/model.js';
+export type * from './types/rpc.js';
+export type * from './types/connection.js';

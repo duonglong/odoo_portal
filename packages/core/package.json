@@ -15,7 +15,6 @@
         "clean": "rm -rf dist"
     },
     "dependencies": {
-        "@odoo-portal/types": "workspace:*",
         "@odoo-portal/odoo-client": "workspace:*",
         "@tanstack/react-query": "^5.67.0",
         "zustand": "^5.0.0"

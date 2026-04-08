@@ -1,4 +1,4 @@
-import type { FieldMap, OdooRecord } from '@odoo-portal/types';
+import type { FieldMap, OdooRecord } from '../types/model.js';
 
 /**
  * Utility to map between Odoo field names and clean domain property names.

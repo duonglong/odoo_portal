@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { Slot, useRouter, usePathname, useRootNavigationState } from 'expo-router';
-import { useAuth, useUserGroups, useModules } from '@odoo-portal/core';
+import { useAuth, useUserGroups, useModules, ModuleRegistry } from '@odoo-portal/core';
+import { payslipModule } from '@odoo-portal/payslip';
+
+// Register modules
+ModuleRegistry.register(payslipModule);
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useProfile } from '@odoo-portal/settings';
 
 export default function AppLayout() {
     const { session, logout, isSessionChecked, client } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const { width } = useWindowDimensions();
+    const { data: profile } = useProfile();
 
     // Fetch the user's real Odoo group XML IDs, then filter modules accordingly.
     // Groups are cached for the session lifetime (staleTime: Infinity).
@@ -55,9 +61,25 @@ export default function AppLayout() {
                 path: r.path,
                 icon: r.icon ?? 'circle-outline',
             }))
-        ),
-        { name: 'Settings', path: '/settings', icon: 'cog-outline' }
+        )
     ];
+
+    // Find the most specific active route to avoid double highlighting (e.g., /attendance and /attendance/leave-request)
+    const activeRoutePath = routes.reduce((bestMatch, route) => {
+        // Special case: Since both /attendance/leave-list and /attendance/leave-request 
+        // belong to "Leaves", let's make sure the "Leaves" tab stays highlighted 
+        // when either is active. The route.path registered for Leaves is '/attendance/leave-list'.
+        if (pathname.startsWith('/attendance/leave')) {
+            return route.path === '/attendance/leave-list' ? route.path : bestMatch;
+        }
+
+        if (pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path + '/'))) {
+            if (!bestMatch || route.path.length > bestMatch.length) {
+                return route.path;
+            }
+        }
+        return bestMatch;
+    }, '');
 
     const SidebarContent = () => (
         <>
@@ -67,14 +89,15 @@ export default function AppLayout() {
                 </View>
                 <View>
                     <Text className="text-slate-900 text-base font-bold leading-none">Odoo Portal</Text>
-                    <Text className="text-slate-500 text-xs mt-1">Enterprise Edition</Text>
+                    <Text className="text-slate-500 text-xs mt-1"></Text>
                 </View>
             </View>
 
             <ScrollView className="flex-1 px-4">
                 <View className="gap-2">
                     {routes.map((route) => {
-                        const isActive = pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path));
+                        // Fix double highlighting for paths like /attendance and /attendance/leave-request
+                        const isActive = route.path === activeRoutePath;
 
                         return (
                             <TouchableOpacity
@@ -100,18 +123,19 @@ export default function AppLayout() {
                 </View>
             </ScrollView>
 
-            <View className="p-4 gap-4 mt-auto border-t border-slate-200">
-                <TouchableOpacity
-                    className="flex-row items-center justify-center gap-2 rounded-xl h-11 bg-primary shadow-sm shadow-primary/20"
-                >
-                    <MaterialCommunityIcons name="plus" size={20} color="white" />
-                    <Text className="text-white text-sm font-bold">New Request</Text>
-                </TouchableOpacity>
-
+            <View className="p-4 mt-auto border-t border-slate-200">
                 <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center gap-3 flex-1">
-                        <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center">
-                            <Text className="text-slate-500 font-bold uppercase">{session?.name?.charAt(0) || 'U'}</Text>
+                        <View className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center overflow-hidden border border-slate-300">
+                            {profile?.image1920 ? (
+                                <Image
+                                    source={{ uri: `data:image/jpeg;base64,${profile.image1920}` }}
+                                    className="w-full h-full"
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Text className="text-slate-500 font-bold uppercase">{session?.name?.charAt(0) || 'U'}</Text>
+                            )}
                         </View>
                         <View className="flex-1">
                             <Text className="text-slate-900 text-sm font-bold truncate" numberOfLines={1}>
@@ -133,7 +157,9 @@ export default function AppLayout() {
     const MobileTabBar = () => (
         <View className="flex-row items-center justify-around bg-white border-t border-slate-200 pb-safe pt-2 px-2 shadow-xl shadow-black/5">
             {routes.slice(0, 4).map((route) => {
-                const isActive = pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path));
+                // To prevent double highlights (e.g. /attendance vs /attendance/leave-request), 
+                // we exact-match or check if it's a true parent route rather than a sibling.
+                const isActive = route.path === activeRoutePath;
                 return (
                     <TouchableOpacity
                         key={route.path}
@@ -197,23 +223,16 @@ export default function AppLayout() {
                         <View className="flex-row items-center gap-6">
                             <View className="flex-row items-center gap-4 border-r border-slate-200 pr-6 mr-2">
                                 <TouchableOpacity className="relative">
-                                    <MaterialCommunityIcons name="bell-outline" size={22} color="#64748b" />
-                                    <View className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border-2 border-white" />
+                                    {/* <MaterialCommunityIcons name="bell-outline" size={22} color="#64748b" /> */}
+                                    {/* <View className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border-2 border-white" /> */}
                                 </TouchableOpacity>
                                 <TouchableOpacity>
-                                    <MaterialCommunityIcons name="help-circle-outline" size={22} color="#64748b" />
+                                    {/* <MaterialCommunityIcons name="help-circle-outline" size={22} color="#64748b" /> */}
                                 </TouchableOpacity>
                             </View>
 
                             <View className="flex-row items-center gap-4">
-                                <Text className="text-sm font-bold text-slate-700">Oct 24, 2023</Text>
-                                <TouchableOpacity className="flex-row items-center gap-2">
-                                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center border border-primary/20">
-                                        <Text className="text-primary font-bold text-xs">
-                                            {session?.name ? session.name.charAt(0).toUpperCase() : 'U'}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
+                                <Text className="text-sm font-bold text-slate-700">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
                             </View>
                         </View>
                     </View>

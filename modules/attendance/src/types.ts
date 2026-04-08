@@ -1,4 +1,32 @@
-import type { OdooMany2One } from '@odoo-portal/types';
+// Odoo hr.leave models
+
+export interface LeaveType {
+    id: number;
+    name: string;
+    requires_allocation: 'no' | 'yes';
+}
+
+// Domain Models (Clean, no Odoo fields)
+export interface LeaveBalance {
+    id: number;
+    typeId: number;
+    typeName: string;
+    maxLeaves: number;
+    leavesTaken: number;
+}
+
+export interface LeaveRequest {
+    id: number;
+    employeeId: number;
+    employeeName: string;
+    typeId: number;
+    typeName: string;
+    startDate: string;
+    endDate: string;
+    duration: number; // number_of_days
+    status: 'draft' | 'confirm' | 'refuse' | 'validate1' | 'validate';
+    description: string;
+}
 
 /**
  * Domain type for an attendance record (hr.attendance).

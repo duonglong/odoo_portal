@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,11 +10,12 @@ import {
     Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '@odoo-portal/core';
-import { useMyEmployee, useCheckInOut, useAttendanceRecords, useMonthAttendance } from '../hooks.js';
+import { useAuth, useOdooErrorToast, mapOdooError } from '@odoo-portal/core';
+import { useMyEmployee, useCheckInOut, useAttendanceRecords, useMonthAttendance, useIsCheckedIn } from '../hooks.js';
+import { useRouter } from 'expo-router';
 import type { AttendanceRecord } from '../types.js';
 
-import { fmtTime, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '../utils.js';
+import { fmtTime, fmtDate, fmtDayOnly, fmtMonthOnly, fmtDuration, odooToDate } from '@odoo-portal/core';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -48,12 +49,17 @@ function calcMonthStats(year: number, month: number, records: AttendanceRecord[]
 
 interface CalendarSidebarProps {
     currentMonthRecords: AttendanceRecord[];
+    activeDate: Date;
+    onSelectDate: (date: Date) => void;
+    displayDate: Date;
+    setDisplayDate: (date: Date) => void;
 }
 
-const CalendarSidebar = ({ currentMonthRecords }: CalendarSidebarProps) => {
+const CalendarSidebar = ({ currentMonthRecords, activeDate, onSelectDate, displayDate, setDisplayDate }: CalendarSidebarProps) => {
+    const router = useRouter();
     const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth(); // 0-indexed
+    const year = displayDate.getFullYear();
+    const month = displayDate.getMonth(); // 0-indexed
     const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
     const presentSet = useMemo(
@@ -72,13 +78,26 @@ const CalendarSidebar = ({ currentMonthRecords }: CalendarSidebarProps) => {
     const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
     const prevMonthDays = Array.from({ length: 7 }, (_, i) => daysInPrevMonth - 6 + i);
 
+    const handlePrevMonth = () => setDisplayDate(new Date(year, month - 1, 1));
+    const handleNextMonth = () => setDisplayDate(new Date(year, month + 1, 1));
+
     function renderCell(day: number | null, dateObj?: Date) {
-        if (day === null) return <View key={Math.random()} className="w-[14%] items-center py-1" />;
-        const todayFlag = dateObj && isToday(dateObj);
-        const present = dateObj && presentSet.has(dateObj.toDateString());
+        if (day === null || !dateObj) return <View key={Math.random()} className="w-[14%] items-center py-1" />;
+        const todayFlag = isToday(dateObj);
+        const present = presentSet.has(dateObj.toDateString());
+        const isActive = activeDate.toDateString() === dateObj.toDateString();
+
         return (
-            <View key={day} className="w-[14%] items-center py-1">
-                {todayFlag ? (
+            <TouchableOpacity
+                key={day}
+                className="w-[14%] items-center py-1"
+                onPress={() => onSelectDate(dateObj)}
+            >
+                {isActive ? (
+                    <View className="bg-primary-500 rounded-lg w-6 h-6 items-center justify-center shadow-sm">
+                        <Text className="text-[11px] font-bold text-white">{day}</Text>
+                    </View>
+                ) : todayFlag ? (
                     <View className="bg-primary-100 border border-primary-300 rounded-lg w-6 h-6 items-center justify-center">
                         <Text className="text-[11px] font-bold text-primary-600">{day}</Text>
                     </View>
@@ -87,18 +106,30 @@ const CalendarSidebar = ({ currentMonthRecords }: CalendarSidebarProps) => {
                         <Text className="text-[11px] font-semibold text-success">{day}</Text>
                     </View>
                 ) : (
-                    <Text className="text-xs font-medium text-slate-700">{day}</Text>
+                    <View className="w-6 h-6 items-center justify-center">
+                        <Text className="text-[11px] font-medium text-slate-700">{day}</Text>
+                    </View>
                 )}
-            </View>
+            </TouchableOpacity>
         );
     }
 
     return (
         <View className="flex flex-col gap-6 w-full lg:max-w-xs xl:max-w-sm shrink-0">
             <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-                <View className="flex-row items-center gap-2 mb-4">
-                    <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#3713ec" />
-                    <Text className="text-sm font-bold text-slate-900">Calendar View</Text>
+                <View className="flex-row items-center justify-between mb-4">
+                    <View className="flex-row items-center gap-2">
+                        <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#3713ec" />
+                        <Text className="text-sm font-bold text-slate-900">Calendar</Text>
+                    </View>
+                    <View className="flex-row items-center gap-3">
+                        <TouchableOpacity onPress={handlePrevMonth} className="w-8 h-8 items-center justify-center rounded-full bg-slate-50 border border-slate-200 active:bg-slate-100">
+                            <MaterialCommunityIcons name="chevron-left" size={20} color="#64748b" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleNextMonth} className="w-8 h-8 items-center justify-center rounded-full bg-slate-50 border border-slate-200 active:bg-slate-100">
+                            <MaterialCommunityIcons name="chevron-right" size={20} color="#64748b" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <View className="gap-6">
@@ -106,7 +137,7 @@ const CalendarSidebar = ({ currentMonthRecords }: CalendarSidebarProps) => {
                     <View className="flex-col">
                         <View className="flex-row justify-between items-center mb-2 px-1">
                             <Text className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                {today.toLocaleDateString([], { month: 'long', year: 'numeric' })}
+                                {displayDate.toLocaleDateString([], { month: 'long', year: 'numeric' })}
                             </Text>
                         </View>
                         <View className="flex-row flex-wrap">
@@ -155,7 +186,10 @@ const CalendarSidebar = ({ currentMonthRecords }: CalendarSidebarProps) => {
                 <Text className="text-xs text-slate-600 leading-relaxed mb-4">
                     Request time off or manage your vacation schedule directly from here.
                 </Text>
-                <TouchableOpacity className="w-full bg-primary-500 rounded-lg py-2 items-center active:bg-primary-600">
+                <TouchableOpacity
+                    onPress={() => router.push('/attendance/leave-request')}
+                    className="w-full bg-primary-500 rounded-lg py-2 items-center active:bg-primary-600"
+                >
                     <Text className="text-white text-xs font-bold">Go to Leaves</Text>
                 </TouchableOpacity>
             </View>
@@ -261,23 +295,53 @@ export default function AttendanceSummaryScreen() {
     const { session, client } = useAuth();
 
     const { data: employee, isLoading: isEmpLoading, refetch: refetchEmp, isRefetching: isEmpRefetching } = useMyEmployee(client, session?.uid);
-    const { data: records = [], isLoading: isRecLoading, refetch: refetchRec, isRefetching: isRecRefetching } = useAttendanceRecords(client, employee?.id, 0, 10);
     const checkInOut = useCheckInOut(client, session?.uid);
+
+    const [activeDate, setActiveDate] = useState<Date>(new Date());
+    const [displayDate, setDisplayDate] = useState<Date>(() => new Date());
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    // Fetch records specifically for the calendar's display month
+    const {
+        data: monthRecords = [],
+        isLoading: isRecLoading,
+        refetch: refetchRec,
+        isRefetching: isRecRefetching
+    } = useMonthAttendance(client, employee?.id, displayDate.getFullYear(), displayDate.getMonth() + 1);
 
     const isLoading = isEmpLoading || isRecLoading;
     const isRefetching = isEmpRefetching || isRecRefetching;
+    const { data: isCheckedIn } = useIsCheckedIn(client, employee?.id);
 
-    const isCheckedIn = employee?.attendanceState === 'checked_in';
-    const firstRecord = records[0];
-    const activeDate = firstRecord ? new Date(firstRecord.checkIn) : new Date();
+    // Derive active day logs from the fetched month records
+    const todayRecords = monthRecords
+        .filter(r => odooToDate(r.checkIn)?.toDateString() === activeDate.toDateString())
+        .sort((a, b) => (odooToDate(a.checkIn)?.getTime() ?? 0) - (odooToDate(b.checkIn)?.getTime() ?? 0));
+
+    // Auto-scroll to bottom of the timeline whenever a new record is added or checked out
+    useEffect(() => {
+        if (todayRecords.length > 0) {
+            // Slight delay ensures layout has calculated new height before scrolling
+            setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [todayRecords.length, isCheckedIn]);
+
+    // Derive toast from current mutation state
+    const checkInOutToast = useOdooErrorToast(checkInOut.error);
 
     const handleCheckInOut = () => {
         if (!employee) return;
         checkInOut.mutate(
             { employeeId: employee.id },
             {
-                onError: (err: Error) => {
-                    Alert.alert('Error', err.message || 'Could not process attendance action');
+                onError: (err: unknown) => {
+                    const toast = mapOdooError(err);
+                    Alert.alert(
+                        toast?.title ?? 'Error',
+                        toast?.message ?? 'Could not process attendance action',
+                    );
                 },
             },
         );
@@ -291,52 +355,49 @@ export default function AttendanceSummaryScreen() {
         );
     }
 
-    const todayRecords = records
-        .filter(r => odooToDate(r.checkIn)?.toDateString() === activeDate.toDateString())
-        .sort((a, b) => (odooToDate(a.checkIn)?.getTime() ?? 0) - (odooToDate(b.checkIn)?.getTime() ?? 0));
-    const totalWorkedHours = todayRecords.reduce((acc, r) => acc + (r.workedHours || 0), 0);
+    const totalWorkedHours = todayRecords.reduce((acc, curr) => acc + (curr.workedHours ?? 0), 0);
 
     return (
-        <ScrollView
-            className="flex-1 bg-surface"
-            contentContainerClassName="pb-10"
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetchEmp(); refetchRec(); }} tintColor="#3713ec" />}
-        >
-            <View className="max-w-[1440px] mx-auto w-full p-4 md:p-8 flex-col gap-8">
-
-                {/* Breadcrumbs & Header */}
-                <View className="flex-col gap-2">
-                    <View className="flex-row items-center gap-2">
-                        <Text className="text-sm font-medium text-slate-500">Portal</Text>
-                        <MaterialCommunityIcons name="chevron-right" size={16} color="#64748b" />
-                        <Text className="text-sm font-medium text-primary-500">My Attendance</Text>
+        <View className="flex-1 bg-surface">
+            <ScrollView
+                className="flex-1"
+                contentContainerClassName="p-4 md:p-8"
+                refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetchEmp(); refetchRec(); }} tintColor="#3713ec" />}
+            >
+                {/* Header & Controls */}
+                <View className="flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                    <View>
+                        <Text className="text-3xl font-black text-slate-900 tracking-tight">Attendance Daily Log & Summary</Text>
+                        <Text className="text-base text-slate-500 mt-1">Select a date to view check-in timelines and manage your shifts.</Text>
                     </View>
 
-                    <View className="flex-col md:flex-row justify-between items-start md:items-end gap-4 mt-2">
-                        <View className="flex-col gap-1 flex-shrink">
-                            <Text className="text-3xl font-black text-slate-900 tracking-tight">Attendance Daily Log & Summary</Text>
-                            <Text className="text-slate-500">Real-time tracking and monthly health trends for your work shifts.</Text>
-                        </View>
-
-                        <View className="flex-row gap-3 self-stretch md:self-auto">
-                            <TouchableOpacity className="flex-row items-center justify-center gap-2 bg-primary-100 px-4 py-2.5 rounded-lg border border-primary-200">
-                                <MaterialCommunityIcons name="download" size={18} color="#3713ec" />
-                                <Text className="text-primary-600 font-bold text-sm">Export Log</Text>
-                            </TouchableOpacity>
-
+                    <View className="flex-row items-center gap-3">
+                        {checkInOutToast && (
+                            <View className="bg-error/10 px-3 py-2 rounded-lg flex-row items-center gap-2">
+                                <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#ef4444" />
+                                <Text className="text-xs font-bold text-error">{checkInOutToast.title}</Text>
+                            </View>
+                        )}
+                        <View className="shadow-sm shadow-black/5">
                             <TouchableOpacity
                                 onPress={handleCheckInOut}
                                 disabled={checkInOut.isPending}
-                                className={`flex-row items-center justify-center gap-2 px-6 py-2.5 rounded-lg shadow-sm ${isCheckedIn ? 'bg-error shadow-error/20' : 'bg-primary-500 shadow-primary-500/30'
+                                className={`flex-row items-center justify-center gap-2 px-6 py-3 rounded-xl border ${isCheckedIn
+                                    ? 'bg-white border-slate-200 active:bg-slate-50'
+                                    : 'bg-primary-600 border-primary-600 active:bg-primary-700'
                                     } ${checkInOut.isPending ? 'opacity-70' : ''}`}
                             >
                                 {checkInOut.isPending ? (
-                                    <ActivityIndicator size="small" color="white" />
+                                    <ActivityIndicator size="small" color={isCheckedIn ? '#64748b' : '#ffffff'} />
                                 ) : (
                                     <>
-                                        <MaterialCommunityIcons name={isCheckedIn ? 'logout' : 'login'} size={18} color="white" />
-                                        <Text className="text-white font-bold text-sm">
-                                            {isCheckedIn ? 'Clock Out' : 'Clock In'}
+                                        <MaterialCommunityIcons
+                                            name={isCheckedIn ? 'logout' : 'login'}
+                                            size={20}
+                                            color={isCheckedIn ? '#ef4444' : '#ffffff'}
+                                        />
+                                        <Text className={`text-sm font-bold ${isCheckedIn ? 'text-slate-700' : 'text-white'}`}>
+                                            {isCheckedIn ? 'Clock Out' : 'Clock In Now'}
                                         </Text>
                                     </>
                                 )}
@@ -348,7 +409,13 @@ export default function AttendanceSummaryScreen() {
                 <View className="flex-col lg:flex-row gap-8 items-start">
                     {Platform.OS === 'web' ? (
                         <View className="hidden lg:flex">
-                            <CalendarSidebar currentMonthRecords={records} />
+                            <CalendarSidebar
+                                currentMonthRecords={monthRecords}
+                                activeDate={activeDate}
+                                onSelectDate={setActiveDate}
+                                displayDate={displayDate}
+                                setDisplayDate={setDisplayDate}
+                            />
                         </View>
                     ) : null}
 
@@ -382,11 +449,16 @@ export default function AttendanceSummaryScreen() {
                                 </TouchableOpacity>
                             </View>
 
-                            <View className="p-8">
+                            <ScrollView
+                                ref={scrollViewRef}
+                                className="max-h-[380px]"
+                                contentContainerClassName="p-8"
+                                showsVerticalScrollIndicator={true}
+                            >
                                 {todayRecords.length === 0 ? (
                                     <View className="items-center justify-center py-8 opacity-50">
                                         <MaterialCommunityIcons name="file-search-outline" size={48} color="#94a3b8" />
-                                        <Text className="text-slate-500 font-medium mt-2">No attendance records today.</Text>
+                                        <Text className="text-slate-500 font-medium mt-2">No attendance records for this date.</Text>
                                     </View>
                                 ) : (
                                     <View className="relative flex-col">
@@ -438,12 +510,11 @@ export default function AttendanceSummaryScreen() {
                                         ))}
                                     </View>
                                 )}
-                            </View>
+                            </ScrollView>
 
                             {/* Footer stats */}
                             <View className="bg-slate-50 p-6 border-t border-slate-100 flex-row justify-between items-center">
                                 <Text className="text-xs text-slate-400 italic">
-                                    {/* Productivity & break stats require timesheet data — coming soon */}
                                     Detailed stats via Timesheets module
                                 </Text>
                                 <TouchableOpacity>
@@ -471,12 +542,19 @@ export default function AttendanceSummaryScreen() {
                     </View>
 
                     {Platform.OS !== 'web' ? (
-                        <View className="flex lg:hidden">
-                            <CalendarSidebar currentMonthRecords={records} />
+                        <View className="mt-8">
+                            <CalendarSidebar
+                                currentMonthRecords={monthRecords}
+                                activeDate={activeDate}
+                                onSelectDate={setActiveDate}
+                                displayDate={displayDate}
+                                setDisplayDate={setDisplayDate}
+                            />
                         </View>
                     ) : null}
                 </View>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </View>
     );
 }
+

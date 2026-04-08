@@ -1,4 +1,4 @@
-import type { FieldMap } from '@odoo-portal/types';
+import type { FieldMap } from '@odoo-portal/odoo-client';
 
 /**
  * Field mapping: hr.attendance
@@ -19,7 +19,29 @@ export const employeeFieldMap: FieldMap = {
     id: 'id',
     name: 'name',
     jobTitle: 'job_title',
-    departmentId: 'department_id',
-    attendanceState: 'attendance_state',
+    departmentId: 'department_id'
 };
 
+/**
+ * Field mapping: hr.leave
+ */
+export const leaveRequestFieldMap: FieldMap = {
+    id: 'id',
+    employeeId: 'employee_id', // Note: mapFromOdoo handles Many2One [id, name]
+    typeId: 'holiday_status_id',
+    startDate: 'request_date_from',
+    endDate: 'request_date_to',
+    duration: 'number_of_days',
+    status: 'state',
+    description: 'name',
+};
+
+/**
+ * Field mapping: hr.leave.allocation
+ */
+export const leaveAllocationFieldMap: FieldMap = {
+    id: 'id',
+    typeId: 'holiday_status_id',
+    maxLeaves: 'max_leaves',
+    leavesTaken: 'leaves_taken',
+};

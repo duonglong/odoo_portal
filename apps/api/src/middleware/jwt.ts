@@ -25,11 +25,16 @@ declare module 'hono' {
  */
 export const jwtMiddleware = createMiddleware(async (c, next) => {
     const authHeader = c.req.header('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-        return c.json({ error: 'Missing or invalid Authorization header' }, 401);
-    }
+    const queryToken = c.req.query('token');
 
-    const token = authHeader.slice(7);
+    let token: string;
+    if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.slice(7);
+    } else if (queryToken) {
+        token = queryToken;
+    } else {
+        return c.json({ error: 'Missing or invalid Authorization header or token query parameter' }, 401);
+    }
     const secret = process.env['JWT_SECRET'];
     if (!secret) {
         return c.json({ error: 'Server misconfiguration: JWT_SECRET not set' }, 500);

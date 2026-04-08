@@ -23,13 +23,18 @@ app.route('/proxy', proxyRouter);
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 
 // ── Start server ──────────────────────────────────────────────────────────────
+if (!process.env['JWT_SECRET']) {
+    console.error('FATAL: JWT_SECRET environment variable is required but missing.');
+    process.exit(1);
+}
+
 const port = parseInt(process.env['PORT'] ?? '3001', 10);
 
 serve({ fetch: app.fetch, port }, (info) => {
     console.log(`🚀 Odoo Portal BFF proxy running on http://localhost:${info.port}`);
     console.log(`   Health:  GET  http://localhost:${info.port}/health`);
     console.log(`   Login:   POST http://localhost:${info.port}/auth/login`);
-    console.log(`   Proxy:   POST http://localhost:${info.port}/proxy`);
+    console.log(`   Proxy:   POST http://localhost:${info.port}/proxy/<odoo-path>`);
 });
 
 export { app };

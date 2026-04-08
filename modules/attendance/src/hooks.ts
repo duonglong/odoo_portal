@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { OdooClient } from '@odoo-portal/odoo-client';
-import { AttendanceRepository } from './repository.js';
+import { AttendanceRepository, type LeaveFilters } from './repository.js';
 
 const QUERY_KEYS = {
     employee: (userId: number) => ['attendance', 'employee', userId] as const,
@@ -9,6 +9,15 @@ const QUERY_KEYS = {
         ['attendance', 'records', employeeId, page] as const,
     month: (employeeId: number, year: number, month: number) =>
         ['attendance', 'month', employeeId, year, month] as const,
+    leaveBalances: (employeeId: number) =>
+        ['attendance', 'leave_balances', employeeId] as const,
+    myLeaveRequests: (employeeId: number, filters: LeaveFilters, page: number) =>
+        ['attendance', 'my_leave_requests', employeeId, filters, page] as const,
+    teamLeaves: (departmentId: number) =>
+        ['attendance', 'team_leaves', departmentId] as const,
+    leaveTypes: () => ['attendance', 'leave_types'] as const,
+    myUpcomingLeaves: (employeeId: number) =>
+        ['attendance', 'my_upcoming_leaves', employeeId] as const,
 };
 
 /** Hook to get the current user's employee record */
@@ -22,7 +31,26 @@ export const useMyEmployee = (client: OdooClient | null, uid: number | undefined
         queryKey: QUERY_KEYS.employee(uid ?? 0),
         queryFn: () => repo!.getMyEmployee(uid!),
         enabled: repo !== null && uid !== undefined,
-        staleTime: 1000 * 60 * 10, // Employee data is stable — cache 10 min
+        staleTime: 1000 * 60 * 10,
+    });
+};
+
+/** Hook to check if employee is currently checked in */
+export const useIsCheckedIn = (client: OdooClient | null, employeeId: number | undefined) => {
+    return useQuery({
+        queryKey: ['attendance', 'is_checked_in', employeeId ?? 0] as const,
+        queryFn: async () => {
+            if (!client || !employeeId) return false;
+            const openRecords = await client.searchRead<{ id: number }>(
+                'hr.attendance',
+                [['employee_id', '=', employeeId], ['check_out', '=', false]],
+                ['id'],
+                { limit: 1 }
+            );
+            return openRecords.length > 0;
+        },
+        enabled: client !== null && employeeId !== undefined,
+        staleTime: 1000 * 60 * 1,
     });
 };
 
@@ -43,16 +71,16 @@ export const useAttendanceRecords = (
         queryFn: () =>
             repo!.getMyAttendance(employeeId!, pageSize, page * pageSize),
         enabled: repo !== null && employeeId !== undefined,
-        staleTime: 1000 * 60 * 1, // Attendance data changes often — 1 min
+        staleTime: 1000 * 60 * 1,
     });
 };
 
-/** Hook to get all attendance records for a calendar month (for the calendar grid view) */
+/** Hook to get all attendance records for a calendar month */
 export const useMonthAttendance = (
     client: OdooClient | null,
     employeeId: number | undefined,
     year: number,
-    month: number, // 1-indexed
+    month: number,
 ) => {
     const repo = useMemo(
         () => (client ? new AttendanceRepository(client) : null),
@@ -63,7 +91,7 @@ export const useMonthAttendance = (
         queryKey: QUERY_KEYS.month(employeeId ?? 0, year, month),
         queryFn: () => repo!.getMonthAttendance(employeeId!, year, month),
         enabled: repo !== null && employeeId !== undefined,
-        staleTime: 1000 * 60 * 5, // Monthly view — refresh every 5 min
+        staleTime: 1000 * 60 * 5,
     });
 };
 
@@ -81,13 +109,117 @@ export const useCheckInOut = (client: OdooClient | null, uid: number | undefined
             return repo.checkInOut({ employeeId });
         },
         onSuccess: () => {
-            // Invalidate both the employee state and the attendance records
             void queryClient.invalidateQueries({
                 queryKey: ['attendance', 'employee', uid ?? 0],
             });
             void queryClient.invalidateQueries({
                 queryKey: ['attendance', 'records'],
             });
+            void queryClient.invalidateQueries({
+                queryKey: ['attendance', 'month'],
+            });
+            void queryClient.invalidateQueries({
+                queryKey: ['attendance', 'is_checked_in'],
+            });
         },
+    });
+};
+
+// --- Leave Hooks ---
+
+export const useLeaveBalances = (client: OdooClient | null, employeeId: number | undefined) => {
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useQuery({
+        queryKey: QUERY_KEYS.leaveBalances(employeeId ?? 0),
+        queryFn: () => repo!.getLeaveBalances(employeeId!),
+        enabled: repo !== null && employeeId !== undefined,
+        staleTime: 1000 * 60 * 5,
+    });
+};
+
+export const useMyLeaveRequests = (
+    client: OdooClient | null,
+    employeeId: number | undefined,
+    filters: LeaveFilters = {},
+    page = 0,
+    pageSize = 20
+) => {
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useQuery({
+        queryKey: QUERY_KEYS.myLeaveRequests(employeeId ?? 0, filters, page),
+        queryFn: () => repo!.getMyLeaveRequests(employeeId!, filters, pageSize, page * pageSize),
+        enabled: repo !== null && employeeId !== undefined,
+        staleTime: 1000 * 60 * 2,
+    });
+};
+
+export const useTeamLeaves = (client: OdooClient | null, departmentId: number | undefined) => {
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useQuery({
+        queryKey: QUERY_KEYS.teamLeaves(departmentId ?? 0),
+        queryFn: () => repo!.getTeamUpcomingLeaves(departmentId!),
+        enabled: repo !== null && departmentId !== undefined,
+        staleTime: 1000 * 60 * 10,
+    });
+};
+
+export const useCreateLeave = (client: OdooClient | null) => {
+    const queryClient = useQueryClient();
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useMutation({
+        mutationFn: async (data: {
+            holiday_status_id: number;
+            request_date_from: string;
+            request_date_to: string;
+            name: string;
+            employee_id?: number;
+        }) => {
+            if (!repo) throw new Error('Not authenticated');
+            return repo.createLeaveRequest(data);
+        },
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        }
+    });
+}
+
+export const useLeaveTypes = (client: OdooClient | null) => {
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useQuery({
+        queryKey: QUERY_KEYS.leaveTypes(),
+        queryFn: () => repo!.getLeaveTypes(),
+        enabled: repo !== null,
+        staleTime: 1000 * 60 * 60, // 1 hour
+    });
+};
+
+export const useMyUpcomingLeaves = (client: OdooClient | null, employeeId: number | undefined) => {
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useQuery({
+        queryKey: QUERY_KEYS.myUpcomingLeaves(employeeId ?? 0),
+        queryFn: () => repo!.getMyUpcomingLeaves(employeeId!),
+        enabled: repo !== null && employeeId !== undefined,
+        staleTime: 1000 * 60 * 5,
+    });
+};
+
+export const useDeleteLeave = (client: OdooClient | null) => {
+    const queryClient = useQueryClient();
+    const repo = useMemo(() => (client ? new AttendanceRepository(client) : null), [client]);
+
+    return useMutation({
+        mutationFn: async (leaveId: number) => {
+            if (!repo) throw new Error('Not authenticated');
+            return repo.deleteLeaveRequest(leaveId);
+        },
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        }
     });
 };
