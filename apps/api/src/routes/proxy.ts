@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { jwtMiddleware } from '../middleware/jwt.js';
-import { log } from '../middleware/logger.js';
 import { sessionStore } from '../session-store.js';
 
 const proxyRouter = new Hono();
@@ -9,12 +8,10 @@ const proxyRouter = new Hono();
 proxyRouter.use('*', jwtMiddleware);
 
 /**
- * POST /proxy/jsonrpc
+ * POST /proxy/jsonrpc/:model/:method
  * Header: Authorization: Bearer <token>
  *
  * Body: {
- *   model: string,
- *   method: string,
  *   args?: unknown[],
  *   kwargs?: Record<string, unknown>
  * }
@@ -22,8 +19,9 @@ proxyRouter.use('*', jwtMiddleware);
  * Forwards a generic Odoo call to the stateless External API (/jsonrpc).
  * The proxy injects the user's `uid` and `password` (API Key) from the
  * server-side store so the frontend never sees them.
+ * Model and method are encoded in the URL path for informative access logs.
  */
-proxyRouter.post('/jsonrpc', async (c) => {
+proxyRouter.post('/jsonrpc/:model/:method', async (c) => {
     const jti = c.get('jti');
     const session = await sessionStore.get(jti);
 
@@ -31,9 +29,10 @@ proxyRouter.post('/jsonrpc', async (c) => {
         return c.json({ error: 'Session expired. Please log in again.' }, 401);
     }
 
+    const model = c.req.param('model');
+    const method = c.req.param('method');
+
     let body: {
-        model?: string;
-        method?: string;
         args?: unknown[];
         kwargs?: Record<string, unknown>;
     };
@@ -43,11 +42,7 @@ proxyRouter.post('/jsonrpc', async (c) => {
         return c.json({ error: 'Invalid JSON body' }, 400);
     }
 
-    const { model, method, args = [], kwargs = {} } = body;
-
-    if (!model || !method) {
-        return c.json({ error: 'model and method are required' }, 400);
-    }
+    const { args = [], kwargs = {} } = body;
 
     const odooUrl = `${session.odooUrl}/jsonrpc`;
 
@@ -72,7 +67,6 @@ proxyRouter.post('/jsonrpc', async (c) => {
 
     let odooResponse: Response;
     try {
-        log('debug', 'proxy.call', { odooUrl, model, method });
         odooResponse = await fetch(odooUrl, {
             method: 'POST',
             headers: {

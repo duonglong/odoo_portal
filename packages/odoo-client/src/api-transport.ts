@@ -9,9 +9,9 @@ import { NetworkError, AccessDeniedError, RpcError, SessionExpiredError } from '
  * JWT `Authorization` header.
  *
  * API shape expected by the proxy:
- *   POST {proxyUrl}/proxy/jsonrpc
+ *   POST {proxyUrl}/proxy/jsonrpc/:model/:method
  *   Authorization: Bearer <jwt>
- *   { "model": "res.partner", "method": "search_read", "args": [...], "kwargs": {...} }
+ *   { "args": [...], "kwargs": {...} }
  */
 export class ApiTransport {
     private requestId = 0;
@@ -100,11 +100,12 @@ export class ApiTransport {
             throw new SessionExpiredError();
         }
 
-        const body = { model, method, args, kwargs };
+        const url = `${this.proxyUrl}/proxy/jsonrpc/${encodeURIComponent(model)}/${encodeURIComponent(method)}`;
+        const body = { args, kwargs };
 
         let response: Response;
         try {
-            response = await fetch(`${this.proxyUrl}/proxy/jsonrpc`, {
+            response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -113,7 +114,7 @@ export class ApiTransport {
                 body: JSON.stringify(body),
             });
         } catch (err) {
-            throw new NetworkError(`${this.proxyUrl}/proxy/jsonrpc`, err);
+            throw new NetworkError(url, err);
         }
 
         if (response.status === 401) {
@@ -123,7 +124,7 @@ export class ApiTransport {
 
         if (!response.ok) {
             throw new NetworkError(
-                `${this.proxyUrl}/proxy/jsonrpc`,
+                url,
                 new Error(`HTTP ${response.status}: ${response.statusText}`),
             );
         }
