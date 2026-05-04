@@ -1,1 +1,1 @@
-export { AttendanceSummaryScreen as default } from '@odoo-portal/attendance';
+export { AttendanceSummaryScreen as default } from '../../src/modules/attendance';

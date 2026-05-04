@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { jwtMiddleware } from '../middleware/jwt.js';
+import { log } from '../middleware/logger.js';
 import { sessionStore } from '../session-store.js';
 
 const proxyRouter = new Hono();
@@ -24,7 +25,7 @@ proxyRouter.use('*', jwtMiddleware);
  */
 proxyRouter.post('/jsonrpc', async (c) => {
     const jti = c.get('jti');
-    const session = sessionStore.get(jti);
+    const session = await sessionStore.get(jti);
 
     if (!session) {
         return c.json({ error: 'Session expired. Please log in again.' }, 401);
@@ -71,7 +72,7 @@ proxyRouter.post('/jsonrpc', async (c) => {
 
     let odooResponse: Response;
     try {
-        console.log(`[PROXY] Fetching stateless: ${odooUrl} (Model: ${model}, Method: ${method})`);
+        log('debug', 'proxy.call', { odooUrl, model, method });
         odooResponse = await fetch(odooUrl, {
             method: 'POST',
             headers: {
@@ -80,6 +81,7 @@ proxyRouter.post('/jsonrpc', async (c) => {
                 'X-Requested-With': 'XMLHttpRequest',
             },
             body: JSON.stringify(rpcBody),
+            signal: AbortSignal.timeout(15_000),
         });
     } catch (err) {
         return c.json({ error: `Failed to reach Odoo: ${String(err)}` }, 502);

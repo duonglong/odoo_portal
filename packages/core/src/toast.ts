@@ -1,5 +1,7 @@
 import { mapOdooError } from './hooks/use-odoo-error-toast.js';
 
+let _toastCounter = 0;
+
 export type ToastMessage = {
     id: string;
     title: string;
@@ -12,7 +14,7 @@ export const toast = {
 
     emit(t: Omit<ToastMessage, 'id'>) {
         if (!t) return;
-        const message = { ...t, id: Math.random().toString(36).substring(7) };
+        const message = { ...t, id: `toast-${++_toastCounter}` };
         this.listeners.forEach((listener) => listener(message));
     },
 

@@ -1,3 +1,3 @@
-import { HistoryScreen } from '@odoo-portal/attendance';
+import { HistoryScreen } from '../../../src/modules/attendance';
 
 export default HistoryScreen;

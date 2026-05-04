@@ -39,15 +39,3 @@ export interface OdooSession {
     isAuthenticated: boolean;
 }
 
-/**
- * Saved connection info for multi-instance switching.
- */
-export interface SavedConnection {
-    id: string;
-    url: string;
-    database: string;
-    username: string;
-    /** Display label, e.g. 'My Company (Production)' */
-    label: string;
-    lastUsedAt: string;
-}

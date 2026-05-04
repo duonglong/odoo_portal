@@ -1,33 +1,26 @@
-/**
- * In-memory session store.
- *
- * Maps a JWT id (jti) → the Odoo session cookie string for that user.
- * Swap for a Redis-backed store in multi-instance deployments.
- */
+import { config } from './config.js';
 
 export interface StoredSession {
-    /** The raw password or API key to inject into execute_kw calls */
-    password: string;
-    /** The Odoo instance URL this session belongs to */
-    odooUrl: string;
-    /** Odoo database */
-    database: string;
-    /** Odoo login (username/email) for web sessions */
-    login: string;
-    /** Odoo uid */
-    uid: number;
-    /** When this entry expires (epoch ms) */
+    password:  string;
+    odooUrl:   string;
+    database:  string;
+    login:     string;
+    uid:       number;
     expiresAt: number;
 }
 
-class SessionStore {
+export interface ISessionStore {
+    get(jti: string): Promise<StoredSession | undefined>;
+    set(jti: string, session: StoredSession): Promise<void>;
+    delete(jti: string): Promise<void>;
+}
+
+// ── In-memory implementation (default) ───────────────────────────────────────
+
+class MemorySessionStore implements ISessionStore {
     private store = new Map<string, StoredSession>();
 
-    set(jti: string, session: StoredSession): void {
-        this.store.set(jti, session);
-    }
-
-    get(jti: string): StoredSession | undefined {
+    async get(jti: string): Promise<StoredSession | undefined> {
         const session = this.store.get(jti);
         if (!session) return undefined;
         if (Date.now() > session.expiresAt) {
@@ -37,11 +30,14 @@ class SessionStore {
         return session;
     }
 
-    delete(jti: string): void {
+    async set(jti: string, session: StoredSession): Promise<void> {
+        this.store.set(jti, session);
+    }
+
+    async delete(jti: string): Promise<void> {
         this.store.delete(jti);
     }
 
-    /** Periodically remove expired sessions */
     purgeExpired(): void {
         const now = Date.now();
         for (const [jti, session] of this.store) {
@@ -50,7 +46,35 @@ class SessionStore {
     }
 }
 
-export const sessionStore = new SessionStore();
+// ── Session store singleton ───────────────────────────────────────────────────
 
-// Purge expired sessions every 15 minutes
-setInterval(() => sessionStore.purgeExpired(), 15 * 60 * 1000);
+/**
+ * NOTE: Sessions are stored in-memory by default. All sessions are lost on
+ * process restart. Set SESSION_STORE_TYPE=redis and REDIS_URL to persist
+ * sessions across restarts and across multiple BFF instances.
+ */
+const _memory = new MemorySessionStore();
+let _store: ISessionStore = _memory;
+
+// Purge expired memory sessions every 15 minutes
+setInterval(() => _memory.purgeExpired(), 15 * 60 * 1000).unref();
+
+export const sessionStore: ISessionStore = {
+    get: (jti) => _store.get(jti),
+    set: (jti, s) => _store.set(jti, s),
+    delete: (jti) => _store.delete(jti),
+};
+
+export async function initSessionStore(): Promise<void> {
+    if (config.SESSION_STORE_TYPE !== 'redis') return;
+
+    if (!config.REDIS_URL) {
+        console.error('FATAL: REDIS_URL is required when SESSION_STORE_TYPE=redis');
+        process.exit(1);
+    }
+
+    const { RedisSessionStore } = await import('./session-store-redis.js');
+    const redisStore = new RedisSessionStore(config.REDIS_URL);
+    await redisStore.connect();
+    _store = redisStore;
+}

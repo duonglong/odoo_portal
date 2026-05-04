@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { Slot, useRouter, usePathname, useRootNavigationState } from 'expo-router';
-import { useAuth, useUserGroups, useModules, ModuleRegistry } from '@odoo-portal/core';
-import { payslipModule } from '@odoo-portal/payslip';
-
-// Register modules
-ModuleRegistry.register(payslipModule);
+import { useAuth, useUserGroups, useModules } from '@odoo-portal/core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useProfile } from '@odoo-portal/settings';
+import { useProfile } from '../../src/modules/settings';
 
 export default function AppLayout() {
     const { session, logout, isSessionChecked, client } = useAuth();
@@ -54,30 +50,24 @@ export default function AppLayout() {
     };
 
     const routes = [
-        { name: 'Dashboard', path: '/', icon: 'view-dashboard-outline' },
+        { name: 'Dashboard', path: '/', icon: 'view-dashboard-outline', navHighlightPattern: undefined },
         ...modules.flatMap(reg =>
             reg.module.routes.filter(r => r.showInNav).map(r => ({
                 name: r.title,
                 path: r.path,
                 icon: r.icon ?? 'circle-outline',
+                navHighlightPattern: r.navHighlightPattern,
             }))
         )
     ];
 
-    // Find the most specific active route to avoid double highlighting (e.g., /attendance and /attendance/leave-request)
+    // Find the most specific active route. Modules can declare a navHighlightPattern
+    // to control which pathname patterns should highlight their nav entry.
     const activeRoutePath = routes.reduce((bestMatch, route) => {
-        // Special case: Since both /attendance/leave-list and /attendance/leave-request 
-        // belong to "Leaves", let's make sure the "Leaves" tab stays highlighted 
-        // when either is active. The route.path registered for Leaves is '/attendance/leave-list'.
-        if (pathname.startsWith('/attendance/leave')) {
-            return route.path === '/attendance/leave-list' ? route.path : bestMatch;
-        }
-
-        if (pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path + '/'))) {
-            if (!bestMatch || route.path.length > bestMatch.length) {
-                return route.path;
-            }
-        }
+        const isMatch = route.navHighlightPattern
+            ? new RegExp(route.navHighlightPattern).test(pathname)
+            : pathname === route.path || (route.path !== '/' && pathname.startsWith(route.path + '/'));
+        if (isMatch && (!bestMatch || route.path.length > bestMatch.length)) return route.path;
         return bestMatch;
     }, '');
 
@@ -155,8 +145,13 @@ export default function AppLayout() {
     );
 
     const MobileTabBar = () => (
-        <View className="flex-row items-center justify-around bg-white border-t border-slate-200 pb-safe pt-2 px-2 shadow-xl shadow-black/5">
-            {routes.slice(0, 4).map((route) => {
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="bg-white border-t border-slate-200 shadow-xl shadow-black/5"
+            contentContainerClassName="flex-row items-center pb-safe pt-2 px-2"
+        >
+            {routes.map((route) => {
                 // To prevent double highlights (e.g. /attendance vs /attendance/leave-request), 
                 // we exact-match or check if it's a true parent route rather than a sibling.
                 const isActive = route.path === activeRoutePath;
@@ -181,7 +176,7 @@ export default function AppLayout() {
                 <MaterialCommunityIcons name="logout" size={24} color="#ef4444" />
                 <Text className="text-[10px] mt-1 font-medium text-error flex-wrap">Logout</Text>
             </TouchableOpacity>
-        </View>
+        </ScrollView>
     );
 
     return (

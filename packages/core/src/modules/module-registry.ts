@@ -11,11 +11,7 @@ class ModuleRegistryImpl {
 
     /** Register a feature module */
     register(registration: ModuleRegistration): void {
-        if (this.modules.has(registration.module.id)) {
-            console.warn(
-                `[ModuleRegistry] Module "${registration.module.id}" is already registered. Overwriting.`,
-            );
-        }
+        if (this.modules.has(registration.module.id)) return;
         this.modules.set(registration.module.id, registration);
     }
 

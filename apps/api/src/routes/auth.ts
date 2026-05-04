@@ -1,8 +1,36 @@
 import { Hono } from 'hono';
+import { config } from '../config.js';
+import { log } from '../middleware/logger.js';
 import { sessionStore } from '../session-store.js';
-import { signToken, jtiFromToken } from '../middleware/jwt.js';
+import { signToken, jwtMiddleware } from '../middleware/jwt.js';
 
 const authRouter = new Hono();
+
+// ── Login rate limiter ────────────────────────────────────────────────────────
+// Sliding-window counter keyed on client IP. Single-process only.
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const LOGIN_MAX_ATTEMPTS = 10;
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+
+// Purge stale entries so the Map does not grow without bound under rotating IPs
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of loginAttempts) {
+        if (now > entry.resetAt) loginAttempts.delete(ip);
+    }
+}, 15 * 60 * 1000).unref();
+
+function checkLoginRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const entry = loginAttempts.get(ip);
+    if (!entry || now > entry.resetAt) {
+        loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+        return true;
+    }
+    if (entry.count >= LOGIN_MAX_ATTEMPTS) return false;
+    entry.count++;
+    return true;
+}
 
 /**
  * POST /auth/login
@@ -14,6 +42,12 @@ const authRouter = new Hono();
  * server-side for proxying.
  */
 authRouter.post('/login', async (c) => {
+    const ip = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'unknown';
+    if (!checkLoginRateLimit(ip)) {
+        log('warn', 'auth.rate_limited', { ip });
+        return c.json({ error: 'Too many login attempts. Please try again later.' }, 429);
+    }
+
     let body: { url?: string; database?: string; login?: string; password?: string };
     try {
         body = await c.req.json();
@@ -45,6 +79,7 @@ authRouter.post('/login', async (c) => {
                     args: [database, login, password, {}],
                 },
             }),
+            signal: AbortSignal.timeout(15_000),
         });
     } catch (err) {
         return c.json({ error: `Cannot reach Odoo at ${url}: ${String(err)}` }, 502);
@@ -65,13 +100,13 @@ authRouter.post('/login', async (c) => {
 
     const uid = authJson.result;
     if (typeof uid !== 'number' || !uid) {
+        log('warn', 'auth.invalid_credentials', { ip, login, odooUrl });
         return c.json({ error: 'Invalid credentials' }, 401);
     }
 
-    // 2. Fetch session details via `object.execute_kw` to build the full session info
-    let readResponse: Response;
-    try {
-        readResponse = await fetch(odooEndpoint, {
+    // 2. Fetch session details and server version in parallel
+    const [readResult, versionResult] = await Promise.allSettled([
+        fetch(odooEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -91,36 +126,49 @@ authRouter.post('/login', async (c) => {
                         {
                             fields: ['name', 'login', 'partner_id', 'company_id', 'tz', 'lang'],
                             limit: 1,
-                        }
+                        },
                     ],
                 },
             }),
-        });
-    } catch (err) {
-        return c.json({ error: `Failed reading user details: ${String(err)}` }, 502);
-    }
+            signal: AbortSignal.timeout(10_000),
+        }),
+        fetch(odooEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'call',
+                id: crypto.randomUUID(),
+                params: { service: 'common', method: 'version', args: [] },
+            }),
+            signal: AbortSignal.timeout(5_000),
+        }),
+    ]);
 
-    const readJson = (await readResponse.json()) as {
-        result?: Array<{
-            name: string;
-            login: string;
-            partner_id?: [number, string] | false;
-            company_id?: [number, string] | false;
-            tz?: string | false;
-            lang?: string | false;
-        }>;
-    };
+    const readJson = readResult.status === 'fulfilled'
+        ? ((await readResult.value.json()) as {
+            result?: Array<{
+                name: string;
+                login: string;
+                partner_id?: [number, string] | false;
+                company_id?: [number, string] | false;
+                tz?: string | false;
+                lang?: string | false;
+            }>;
+          })
+        : undefined;
+    const user = readJson?.result?.[0];
 
-    const user = readJson.result?.[0];
+    const versionJson = versionResult.status === 'fulfilled'
+        ? ((await versionResult.value.json()) as { result?: { server_version?: string } })
+        : undefined;
+    const serverVersion: string = versionJson?.result?.server_version ?? 'unknown';
 
     // Issue our own JWT
-    const token = signToken(uid);
+    const { token, jti } = signToken(uid);
+    const ttl = config.JWT_TTL;
 
-    // Decode jti to store session (avoid re-verifying what we just signed)
-    const jti = jtiFromToken(token)!;
-    const ttl = parseInt(process.env['JWT_TTL'] ?? '28800', 10);
-
-    sessionStore.set(jti, {
+    await sessionStore.set(jti, {
         password,
         odooUrl,
         database,
@@ -128,6 +176,8 @@ authRouter.post('/login', async (c) => {
         uid,
         expiresAt: Date.now() + ttl * 1000,
     });
+
+    log('info', 'auth.login_success', { uid, login, odooUrl });
 
     return c.json({
         token,
@@ -142,7 +192,7 @@ authRouter.post('/login', async (c) => {
                 tz: user?.tz || 'UTC',
                 uid,
             },
-            serverVersion: 'unknown (jsonrpc)', // External API doesn't expose version on login directly
+            serverVersion,
             isAuthenticated: true,
         },
     });
@@ -154,16 +204,11 @@ authRouter.post('/login', async (c) => {
  *
  * Scraps the session from the BFF store.
  * Because we use stateless JSON-RPC, there is no Odoo session to destroy.
+ * Requires a valid JWT so a forged token cannot drop arbitrary sessions.
  */
-authRouter.post('/logout', async (c) => {
-    const authHeader = c.req.header('Authorization') ?? '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    const jti = jtiFromToken(token);
-
-    if (jti) {
-        sessionStore.delete(jti);
-    }
-
+authRouter.post('/logout', jwtMiddleware, async (c) => {
+    const jti = c.get('jti');
+    await sessionStore.delete(jti);
     return c.json({ ok: true });
 });
 

@@ -1,3 +1,3 @@
-import { LeaveRequestListScreen } from '@odoo-portal/attendance';
+import { LeaveRequestListScreen } from '../../../src/modules/attendance';
 
 export default LeaveRequestListScreen;

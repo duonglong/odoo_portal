@@ -5,7 +5,7 @@
  * Usage:  node scripts/scaffold-module.mjs <module-name> [DisplayName]
  * Example: node scripts/scaffold-module.mjs sales "Sales Orders"
  *
- * Creates modules/<module-name>/ with the full boilerplate structure.
+ * Creates apps/portal/src/modules/<module-name>/ with the full boilerplate structure.
  */
 
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
@@ -23,12 +23,11 @@ const slug = rawName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 const display = rawDisplay ?? slug.replace(/(^|-)\w/g, s => s.replace('-', '').toUpperCase());
 const camel = slug.replace(/-(\w)/g, (_, c) => c.toUpperCase());       // salesOrders
 const pascal = camel.charAt(0).toUpperCase() + camel.slice(1);           // SalesOrders
-const pkg = `@odoo-portal/${slug}`;
 
-const root = resolve(process.cwd(), 'modules', slug);
+const root = resolve(process.cwd(), 'apps/portal/src/modules', slug);
 
 if (existsSync(root)) {
-    console.error(`❌  modules/${slug} already exists.`);
+    console.error(`❌  apps/portal/src/modules/${slug} already exists.`);
     process.exit(1);
 }
 
@@ -37,64 +36,11 @@ const dir = (...parts) => mkdirSync(join(root, ...parts), { recursive: true });
 const file = (path, content) => writeFileSync(join(root, path), content, 'utf8');
 
 // ── Directory tree ────────────────────────────────────────────────────────────
-dir('src', 'screens');
-dir('src', 'widgets');
-
-// ── package.json ──────────────────────────────────────────────────────────────
-file('package.json', JSON.stringify({
-    name: pkg,
-    version: '0.1.0',
-    private: true,
-    type: 'module',
-    main: './src/index.ts',
-    types: './src/index.ts',
-    exports: { '.': './src/index.ts' },
-    scripts: {
-        typecheck: 'tsc --noEmit',
-        clean: 'rm -rf dist',
-    },
-    dependencies: {
-        '@expo/vector-icons': '^15.1.1',
-        '@odoo-portal/core': 'workspace:*',
-        '@odoo-portal/odoo-client': 'workspace:*',
-        '@tanstack/react-query': '^5.67.0',
-    },
-    peerDependencies: {
-        'expo-router': '*',
-        react: '>=18.0.0',
-        'react-native': '>=0.73.0',
-    },
-    devDependencies: {
-        '@types/react': '^19.0.0',
-        'expo-router': '~4.0.0',
-        nativewind: '^4.1.0',
-        react: '^19.0.0',
-        'react-native': '0.76.7',
-        tailwindcss: '^3.4.0',
-        typescript: '^5.7.0',
-    },
-}, null, 4));
-
-// ── tsconfig.json ─────────────────────────────────────────────────────────────
-file('tsconfig.json', `{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "rootDir": "src",
-        "outDir": "dist",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src",
-        "nativewind-env.d.ts"
-    ]
-}
-`);
-
-// ── nativewind-env.d.ts ───────────────────────────────────────────────────────
-file('nativewind-env.d.ts', `/// <reference types="nativewind/types" />\n`);
+dir('screens');
+dir('widgets');
 
 // ── src/types.ts ──────────────────────────────────────────────────────────────
-file('src/types.ts', `// Domain types — clean camelCase, no Odoo field names here
+file('types.ts', `// Domain types — clean camelCase, no Odoo field names here
 
 export interface ${pascal}Record {
     id: number;
@@ -104,7 +50,7 @@ export interface ${pascal}Record {
 `);
 
 // ── src/mappings.ts ───────────────────────────────────────────────────────────
-file('src/mappings.ts', `import type { FieldMap } from '@odoo-portal/odoo-client';
+file('mappings.ts', `import type { FieldMap } from '@odoo-portal/odoo-client';
 
 // Maps camelCase domain fields → Odoo snake_case field names.
 // Change only this file to adapt to a custom Odoo installation.
@@ -116,7 +62,7 @@ export const ${camel}FieldMap: FieldMap = {
 `);
 
 // ── src/repository.ts ─────────────────────────────────────────────────────────
-file('src/repository.ts', `import type { OdooClient } from '@odoo-portal/odoo-client';
+file('repository.ts', `import type { OdooClient } from '@odoo-portal/odoo-client';
 import { mapFromOdoo, getOdooFields } from '@odoo-portal/odoo-client';
 import { ${camel}FieldMap } from './mappings.js';
 import type { ${pascal}Record } from './types.js';
@@ -140,7 +86,7 @@ export class ${pascal}Repository {
 `);
 
 // ── src/hooks.ts ──────────────────────────────────────────────────────────────
-file('src/hooks.ts', `import { useQuery } from '@tanstack/react-query';
+file('hooks.ts', `import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@odoo-portal/core';
 import { ${pascal}Repository } from './repository.js';
 
@@ -155,7 +101,7 @@ export function use${pascal}Records() {
 `);
 
 // ── src/screens/MainScreen.tsx ────────────────────────────────────────────────
-file('src/screens/MainScreen.tsx', `import React from 'react';
+file('screens/MainScreen.tsx', `import React from 'react';
 import { View, Text, ActivityIndicator, FlatList } from 'react-native';
 import { Stack } from 'expo-router';
 import { use${pascal}Records } from '../hooks.js';
@@ -190,7 +136,7 @@ export default function ${pascal}MainScreen() {
 `);
 
 // ── src/widgets/${pascal}ModuleCard.tsx ───────────────────────────────────────
-file(`src/widgets/${pascal}ModuleCard.tsx`, `import React from 'react';
+file(`widgets/${pascal}ModuleCard.tsx`, `import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import type { PortalModule } from '@odoo-portal/core';
@@ -212,7 +158,7 @@ export default function ${pascal}ModuleCard({ module }: Props) {
 `);
 
 // ── src/module.ts ─────────────────────────────────────────────────────────────
-file('src/module.ts', `import type { ModuleRegistration } from '@odoo-portal/core';
+file('module.ts', `import type { ModuleRegistration } from '@odoo-portal/core';
 
 export const ${camel}Module: ModuleRegistration = {
     module: {
@@ -235,44 +181,19 @@ export const ${camel}Module: ModuleRegistration = {
 };
 `);
 
-// ── src/index.ts ──────────────────────────────────────────────────────────────
-file('src/index.ts', `// Module registration
-export { ${camel}Module } from './module.js';
-
-// Domain types
-export type { ${pascal}Record } from './types.js';
-
-// Mappings (useful for field-map extensions)
-export { ${camel}FieldMap } from './mappings.js';
-
-// Repository (for sub-modules and custom use cases)
-export { ${pascal}Repository } from './repository.js';
-
-// Hooks
-export { use${pascal}Records } from './hooks.js';
-
-// Screens
-export { default as ${pascal}MainScreen } from './screens/MainScreen.js';
-
-// Dashboard Widgets
-export { default as ${pascal}ModuleCard } from './widgets/${pascal}ModuleCard.js';
-`);
-
 // ── Done ──────────────────────────────────────────────────────────────────────
 console.log(`
-✅  Module scaffolded: modules/${slug}/
+✅  Module scaffolded: apps/portal/src/modules/${slug}/
 
 Next steps:
-  1. Run \`pnpm install\` to link the workspace package
-  2. Edit modules/${slug}/src/types.ts      — define your domain types
-  3. Edit modules/${slug}/src/mappings.ts   — map to real Odoo field names
-  4. Edit modules/${slug}/src/repository.ts — set MODEL and add queries
+  1. Edit types.ts      — define your domain types
+  2. Edit mappings.ts   — map to real Odoo field names
+  3. Edit repository.ts — set MODEL and add queries
+  4. Run \`pnpm generate-modules\` to add it to the barrel
   5. Register in apps/portal/app/_layout.tsx:
-       import { ${camel}Module } from '${pkg}';
+       import { ${camel}Module } from '../src/modules';
        ModuleRegistry.register(${camel}Module);
   6. Add Expo route file:
        apps/portal/app/(app)/${slug}.tsx
-       → export { ${pascal}MainScreen as default } from '${pkg}';
-  7. Add to apps/portal/package.json dependencies:
-       "${pkg}": "workspace:*"
+       → export { ${pascal}MainScreen as default } from '../../src/modules/${slug}/screens/MainScreen';
 `);

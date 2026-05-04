@@ -30,11 +30,17 @@ export interface PortalRouteConfig {
     icon?: string;
     /** Whether to show this route in the main navigation (tab bar / drawer) */
     showInNav?: boolean;
+    /** Regex string — if set, this nav entry is highlighted when the pattern matches the current pathname */
+    navHighlightPattern?: string;
 }
 
+import type { ComponentType } from 'react';
+
 /** Generic component type — avoids React dependency in types package */
+// Screen components are loaded dynamically; prop types are enforced at the
+// call site (Expo Router route files), not at the registry level.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ScreenComponent = (props: any) => unknown;
+export type ScreenComponent = ComponentType<any>;
 
 /**
  * A widget that a module contributes to the dashboard.

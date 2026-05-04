@@ -1,4 +1,4 @@
-import { PayslipDetailScreen } from '@odoo-portal/payslip';
+import { PayslipDetailScreen } from '../../../src/modules/payslip';
 import { useLocalSearchParams } from 'expo-router';
 
 export default function PayslipDetailPage() {

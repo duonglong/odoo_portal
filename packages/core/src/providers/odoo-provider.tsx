@@ -58,9 +58,15 @@ export const OdooProvider = ({ children, clientOptions = {}, clientFactory }: Od
         const client = clientFactory
             ? clientFactory(config, clientOptions)
             : new OdooClient(config, clientOptions);
+
+        client.setOnSessionExpired(() => {
+            setSession(null);
+            setActiveClient(null);
+        });
+
         clientCache.current.set(key, client);
         return client;
-    }, [clientFactory, clientOptions]);
+    }, [clientFactory, clientOptions, setSession, setActiveClient]);
 
     return (
         <OdooContext.Provider value={{

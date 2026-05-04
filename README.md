@@ -164,37 +164,32 @@ odoo_portal/
 ├── packages/
 │   ├── odoo-client/        ← JSON-RPC + BFF proxy client, auth, CRUD, field mapper, base types
 │   └── core/               ← React providers, hooks, module registry, connection store, plugin types
-├── modules/
-│   └── attendance/         ← Attendance feature module
-│       └── src/
-│           ├── types.ts
-│           ├── mappings.ts
-│           ├── repository.ts
-│           ├── hooks.ts
-│           ├── utils.ts
-│           ├── module.ts
-│           ├── index.ts
-│           └── screens/
-│               ├── AttendanceSummaryScreen.tsx  ← Daily log timeline + clock-in/out
-│               ├── MyAttendanceScreen.tsx        ← Monthly calendar + stats
-│               └── HistoryScreen.tsx             ← Paginated attendance history
 ├── apps/
 │   ├── api/                ← Hono BFF proxy (resolves web CORS, holds Odoo session)
 │   └── portal/             ← Expo universal app (iOS, Android, Web)
+│       ├── scripts/
+│       │   └── generate-modules.mjs  ← auto-generates src/modules/index.ts
 │       ├── src/
+│       │   ├── modules/    ← all feature modules (co-located with the app)
+│       │   │   ├── attendance/
+│       │   │   ├── payslip/
+│       │   │   ├── settings/
+│       │   │   ├── sales/
+│       │   │   └── index.ts          ← AUTO-GENERATED, do not edit
+│       │   ├── components/
 │       │   └── screens/
-│       │       └── LoginScreen.tsx  ← Auth UI (portal-specific, uses expo-router)
-│       └── app/            ← Expo Router file-system routes (thin entry points)
+│       │       └── LoginScreen.tsx   ← Auth UI
+│       └── app/            ← Expo Router routes (thin re-exports only)
 │           ├── _layout.tsx
 │           ├── (auth)/
-│           │   └── login.tsx           ← 1 line: re-exports LoginScreen
+│           │   └── login.tsx
 │           └── (app)/
-│               ├── _layout.tsx         ← Auth guard + nav shell
-│               ├── index.tsx           ← Dashboard
-│               ├── attendance.tsx      ← re-exports AttendanceSummaryScreen
+│               ├── _layout.tsx       ← Auth guard + nav shell
+│               ├── index.tsx         ← Dashboard
+│               ├── attendance.tsx
 │               └── attendance/
-│                   ├── history.tsx     ← re-exports HistoryScreen
-│                   └── my-attendance.tsx ← re-exports MyAttendanceScreen
+├── scripts/
+│   └── scaffold-module.mjs ← generates a new module boilerplate
 ├── turbo.json              ← Turborepo task pipeline
 ├── pnpm-workspace.yaml     ← Workspace config
 └── tsconfig.base.json      ← Strict TS shared config
@@ -209,7 +204,7 @@ odoo_portal/
 Odoo field names are snake_case and vary across installations. The **FieldMap** pattern decouples domain types from Odoo internals:
 
 ```typescript
-// modules/attendance/src/mappings.ts
+// apps/portal/src/modules/attendance/mappings.ts
 export const attendanceFieldMap: FieldMap = {
   checkIn:     'check_in',       // domain → odoo
   checkOut:    'check_out',
@@ -258,20 +253,15 @@ All data flows through **TanStack Query v5**:
 ### File Structure
 
 ```
-modules/my-feature/
-├── package.json          ← Workspace deps: core, odoo-client
-├── tsconfig.json
-├── nativewind-env.d.ts   ← NativeWind className types
-└── src/
-    ├── types.ts          ← 1. Domain types (clean, no Odoo field names)
-    ├── mappings.ts       ← 2. FieldMap: domain prop → Odoo field
-    ├── repository.ts     ← 3. All Odoo calls, uses mapFromOdoo()
-    ├── hooks.ts          ← 4. React hooks wrapping the repository
-    ├── screens/          ← 5. UI components (use hooks, never OdooClient)
-    │   ├── MainScreen.tsx
-    │   └── DetailScreen.tsx
-    ├── module.ts         ← 6. PortalModule registration
-    └── index.ts          ← 7. Public API
+apps/portal/src/modules/my-feature/
+├── types.ts          ← 1. Domain types (clean, no Odoo field names)
+├── mappings.ts       ← 2. FieldMap: domain prop → Odoo field
+├── repository.ts     ← 3. All Odoo calls, uses mapFromOdoo()
+├── hooks.ts          ← 4. React hooks wrapping the repository
+├── screens/          ← 5. UI components (use hooks, never OdooClient)
+│   ├── MainScreen.tsx
+│   └── DetailScreen.tsx
+└── module.ts         ← 6. PortalModule registration
 ```
 
 ### Step-by-Step
@@ -390,17 +380,21 @@ export const salesModule: ModuleRegistration = {
 
 #### 7. Wire it into the App
 
-```typescript
-// apps/portal/app/_layout.tsx
-import { ModuleRegistry } from '@odoo-portal/core';
-import { salesModule } from '@odoo-portal/sales';
+```bash
+# 1. Regenerate the module barrel
+pnpm generate-modules
+```
 
+```typescript
+// 2. Register in apps/portal/app/_layout.tsx
+import { salesModule } from '../src/modules';
 ModuleRegistry.register(salesModule);
 ```
 
-Then add an Expo Router file:
-```
-apps/portal/app/(app)/sales.tsx → re-exports your screen
+```tsx
+// 3. Add an Expo Router entry point
+// apps/portal/app/(app)/sales.tsx
+export { SalesMainScreen as default } from '../../src/modules/sales/screens/MainScreen';
 ```
 
 That's it. The tab navigator auto-discovers the module if the user has the required Odoo groups.
@@ -418,24 +412,19 @@ pnpm new-module <slug> "Display Name"
 pnpm new-module sales "Sales Orders"
 ```
 
-This generates `modules/sales/` with all boilerplate wired up correctly:
+This generates `apps/portal/src/modules/sales/` with all boilerplate wired up correctly:
 
 ```
-modules/sales/
-├── package.json              ← workspace pkg, correct deps
-├── tsconfig.json             ← extends tsconfig.base.json
-├── nativewind-env.d.ts       ← NativeWind className support
-└── src/
-    ├── types.ts              ← SalesRecord interface
-    ├── mappings.ts           ← salesFieldMap (camelCase → Odoo)
-    ├── repository.ts         ← SalesRepository.list()
-    ├── hooks.ts              ← useSalesRecords() TanStack hook
-    ├── module.ts             ← salesModule registration
-    ├── index.ts              ← full public barrel
-    ├── screens/
-    │   └── MainScreen.tsx    ← working FlatList screen
-    └── widgets/
-        └── SalesModuleCard.tsx
+apps/portal/src/modules/sales/
+├── types.ts              ← SalesRecord interface
+├── mappings.ts           ← salesFieldMap (camelCase → Odoo)
+├── repository.ts         ← SalesRepository.list()
+├── hooks.ts              ← useSalesRecords() TanStack hook
+├── module.ts             ← salesModule registration
+├── screens/
+│   └── MainScreen.tsx    ← working FlatList screen
+└── widgets/
+    └── SalesModuleCard.tsx
 ```
 
 After scaffolding, fill in **4 TODOs** and wire it up:
@@ -450,19 +439,16 @@ After scaffolding, fill in **4 TODOs** and wire it up:
 Then wire into the app (the script prints the exact commands):
 
 ```bash
-# 1. Link the workspace package
-pnpm install
+# 1. Regenerate the module barrel
+pnpm generate-modules
 
-# 2. Add to apps/portal/package.json → dependencies
-"@odoo-portal/sales": "workspace:*"
-
-# 3. Register in apps/portal/app/_layout.tsx
-import { salesModule } from '@odoo-portal/sales';
+# 2. Register in apps/portal/app/_layout.tsx
+import { salesModule } from '../src/modules';
 ModuleRegistry.register(salesModule);
 
-# 4. Create the Expo Router entry point
+# 3. Create the Expo Router entry point
 # apps/portal/app/(app)/sales.tsx
-export { SalesMainScreen as default } from '@odoo-portal/sales';
+export { SalesMainScreen as default } from '../../src/modules/sales/screens/MainScreen';
 ```
 
 ---
@@ -821,16 +807,28 @@ This lets the package pass CI gracefully until tests are written.
 
 ## Environment Variables
 
-Copy `.env.example` to `.env`:
+### Portal app (`apps/portal/.env`)
+
+Copy `apps/portal/.env.example` to `apps/portal/.env`:
 
 ```env
-ODOO_URL=http://localhost:8069
-ODOO_DB=odoo19
-ODOO_LOGIN=admin
-ODOO_PASSWORD=admin
+EXPO_PUBLIC_ODOO_URL=http://localhost:8069
+EXPO_PUBLIC_ODOO_DATABASE=odoo
+EXPO_PUBLIC_API_URL=http://localhost:3001
+APP_ENV=development
 ```
 
 These are **optional** — the login screen lets users enter any URL at runtime.
+
+### BFF proxy (`apps/api/.env`)
+
+Copy `apps/api/.env.example` to `apps/api/.env` and set at minimum:
+
+```env
+JWT_SECRET=<random-string-at-least-32-chars>
+```
+
+See the [BFF Proxy](#bff-proxy-appsapi) section for the full variable reference.
 
 ---
 
@@ -879,10 +877,13 @@ node dist/index.js
 
 | Variable | Default | Description |
 |---|---|---|
-| `JWT_SECRET` | *(required)* | Random secret for signing JWTs — change in production |
+| `JWT_SECRET` | *(required)* | Random secret ≥ 32 chars for signing JWTs — change in production |
 | `JWT_TTL` | `28800` | JWT lifetime in seconds (8 h) |
 | `PORTAL_ORIGINS` | `http://localhost:8081` | Comma-separated allowed origins |
 | `PORT` | `3001` | Port the proxy listens on |
+| `LOG_LEVEL` | `info` | Minimum log level: `debug` \| `info` \| `warn` \| `error` |
+| `SESSION_STORE_TYPE` | `memory` | Session backend: `memory` or `redis` |
+| `REDIS_URL` | *(required if redis)* | Redis connection URL, e.g. `redis://localhost:6379` |
 
 ### Endpoints
 
@@ -895,7 +896,17 @@ node dist/index.js
 
 ### Deployment
 
-No Docker required. Deploy as a standard Node.js app:
+#### Docker (recommended)
+
+A `docker-compose.yml` at the repo root starts the BFF and a Redis instance:
+
+```bash
+docker compose up
+```
+
+The `api` service builds from `apps/api/Dockerfile` (non-root user, health check). Redis is configured as the session store automatically.
+
+#### Manual Node.js
 
 - **VPS** — `node dist/index.js` (use `pm2` to keep it alive)
 - **Railway / Render / Fly.io** — push the repo; they auto-detect Node and run `node dist/index.js`

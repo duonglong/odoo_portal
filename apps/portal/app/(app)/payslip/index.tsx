@@ -1,1 +1,1 @@
-export { PayslipListScreen as default } from '@odoo-portal/payslip';
+export { PayslipListScreen as default } from '../../../src/modules/payslip';

@@ -23,6 +23,14 @@ COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/package.json ./
 
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser  --system --uid  1001 hono
+USER hono
+
 EXPOSE 3001
 ENV NODE_ENV=production
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD node -e "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 CMD ["node", "dist/index.js"]

@@ -3,9 +3,10 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { OdooProvider, ModuleRegistry, useAuth, mapOdooError, toast, type ToastMessage } from '@odoo-portal/core';
-import { attendanceModule } from '@odoo-portal/attendance';
-import { settingsModule } from '@odoo-portal/settings';
+import { attendanceModule, payslipModule, settingsModule } from '../src/modules';
 import { platformSessionStorage } from '~/lib/storage';
+import { appConfig } from '~/lib/app-config';
+import { ErrorBoundary } from '~/src/components/ErrorBoundary';
 import { Platform } from 'react-native';
 import { createOdooClient } from '~/lib/create-client';
 import * as Font from 'expo-font';
@@ -43,6 +44,7 @@ if (typeof document !== 'undefined') {
 
 // ── Register feature modules (runs once at app start) ──────
 ModuleRegistry.register(attendanceModule);
+ModuleRegistry.register(payslipModule);
 ModuleRegistry.register(settingsModule);
 
 // ── Custom Toast System ────────────────────────────
@@ -149,11 +151,11 @@ function SessionRestorer() {
     const { restoreSession } = useAuth();
 
     useEffect(() => {
-        const url = process.env.EXPO_PUBLIC_ODOO_URL ?? '';
-        const database = process.env.EXPO_PUBLIC_ODOO_DATABASE ?? '';
-        restoreSession({ url: url.trim().replace(/\/$/, ''), database: database.trim() });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        restoreSession({
+            url:      appConfig.odooUrl.trim().replace(/\/$/, ''),
+            database: appConfig.odooDatabase.trim(),
+        });
+    }, [restoreSession]);
 
     return null;
 }
@@ -184,6 +186,7 @@ export default function RootLayout() {
     }
 
     return (
+        <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
             <OdooProvider
                 clientOptions={{ sessionStorage: platformSessionStorage }}
@@ -198,6 +201,7 @@ export default function RootLayout() {
                 <GlobalToastContainer />
             </OdooProvider>
         </QueryClientProvider>
+        </ErrorBoundary>
     );
 }
 

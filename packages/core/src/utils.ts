@@ -18,14 +18,14 @@
  * Handles both "YYYY-MM-DD HH:MM:SS" (Odoo format) and proper ISO 8601.
  * Returns null for falsy input.
  */
-export function odooToDate(val: string | null | undefined): Date | null {
+export function odooToDate(val: string | false | null | undefined): Date | null {
     if (!val) return null;
-    // If the string already has a timezone indicator (Z or +HH:MM), parse as-is.
-    if (val.includes('Z') || val.includes('+') || (val.includes('-') && val.lastIndexOf('-') > 7)) {
-        return new Date(val);
-    }
-    // Odoo format — replace space with T and append Z to signal UTC.
-    return new Date(val.replace(' ', 'T') + 'Z');
+    const hasTimezone = /[Z]$|[+-]\d{2}:\d{2}$/.test(val);
+    const hasTime = val.includes('T') || (val.includes(' ') && val.length > 10);
+    if (hasTimezone) return new Date(val);
+    if (hasTime) return new Date(val.replace(' ', 'T') + 'Z');
+    // Date-only string — treat as UTC midnight
+    return new Date(val + 'T00:00:00Z');
 }
 
 /** Format an Odoo datetime string as local time (e.g. "09:30 AM") */

@@ -6,7 +6,6 @@ import {
     TouchableOpacity,
     ScrollView,
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
@@ -15,7 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@odoo-portal/core';
 
 export default function LoginScreen() {
-    const { login, isLoading, session, isSessionChecked } = useAuth();
+    const { login, isLoading, session, isSessionChecked, error } = useAuth();
 
     // ── Inverse Auth Guard ──────────────────────────────────────────────
     // If the user is already logged in, redirect them to the app.
@@ -29,10 +28,13 @@ export default function LoginScreen() {
     const [loginEmail, setLoginEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
 
     const handleLogin = async () => {
+        setLocalError(null);
+
         if (!loginEmail.trim() || !password.trim()) {
-            Alert.alert('Error', 'Please enter your email and password/API key');
+            setLocalError('Please enter your email and password/API key');
             return;
         }
 
@@ -40,7 +42,7 @@ export default function LoginScreen() {
         const envDb = process.env.EXPO_PUBLIC_ODOO_DATABASE;
 
         if (!envUrl || !envDb) {
-            Alert.alert('Configuration Error', 'Odoo URL or Database is not configured in environment variables.');
+            setLocalError('Odoo URL or Database is not configured.');
             return;
         }
 
@@ -50,11 +52,8 @@ export default function LoginScreen() {
                 { login: loginEmail.trim(), password: password.trim() },
             );
             router.replace('/(app)');
-        } catch (err) {
-            Alert.alert(
-                'Login Failed',
-                err instanceof Error ? err.message : 'Invalid credentials',
-            );
+        } catch {
+            // error is captured in useAuth state and displayed inline
         }
     };
 
@@ -130,6 +129,16 @@ export default function LoginScreen() {
                         </View>
                     </View>
 
+                    {/* Inline error */}
+                    {(localError ?? error) && (
+                        <View className="mt-6 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex-row items-center gap-3">
+                            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#dc2626" />
+                            <Text className="text-red-700 text-sm flex-1">
+                                {localError ?? error?.message}
+                            </Text>
+                        </View>
+                    )}
+
                     {/* Action Button */}
                     <TouchableOpacity
                         className={`rounded-xl py-4 items-center mt-10 shadow-lg shadow-odoo-primary/30 border-b-[4px] border-black/10 ${isLoading ? 'bg-odoo-primary/70' : 'bg-odoo-primary'
@@ -144,20 +153,13 @@ export default function LoginScreen() {
                         )}
                     </TouchableOpacity>
 
-                    {/* Info Banner for Odoo 19 */}
-                    <View className="mt-8 bg-blue-50 rounded-xl p-4 flex-row items-center gap-3 border border-blue-100">
-                        <MaterialCommunityIcons name="information-outline" size={20} color="#2563eb" />
-                        <Text className="text-blue-900 text-xs flex-1">
-                            <Text className="font-bold">Odoo 19+ users: </Text>
-                            For enhanced security, use API Keys instead of your password.
-                        </Text>
-                    </View>
+                    
                 </View>
 
                 {/* Footer */}
                 <View className="items-center mt-8 pb-8">
                     <Text className="text-text-muted text-xs">
-                        © 2024 Odoo Portal Integration. Professional Edition.
+                        © {new Date().getFullYear()} A1C
                     </Text>
                 </View>
             </ScrollView>
