@@ -216,17 +216,7 @@ export default function AppLayout() {
                         </View>
 
                         <View className="flex-row items-center gap-6">
-                            <View className="flex-row items-center gap-4 border-r border-slate-200 pr-6 mr-2">
-                                <TouchableOpacity className="relative">
-                                    {/* <MaterialCommunityIcons name="bell-outline" size={22} color="#64748b" /> */}
-                                    {/* <View className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border-2 border-white" /> */}
-                                </TouchableOpacity>
-                                <TouchableOpacity>
-                                    {/* <MaterialCommunityIcons name="help-circle-outline" size={22} color="#64748b" /> */}
-                                </TouchableOpacity>
-                            </View>
-
-                            <View className="flex-row items-center gap-4">
+<View className="flex-row items-center gap-4">
                                 <Text className="text-sm font-bold text-slate-700">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
                             </View>
                         </View>

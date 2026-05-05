@@ -256,10 +256,6 @@ export default function ProfileScreen() {
                                     <Text className="text-sm font-bold text-slate-900">Organization & Address</Text>
                                 </View>
 
-                                <View className="mb-6 hidden">
-                                    {/* Intentionally removed Company Name */}
-                                </View>
-
                                 <View className="flex-row flex-wrap -mx-2">
                                     <View className="w-full px-2 mb-6">
                                         <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Address (Street)</Text>

@@ -293,6 +293,7 @@ const HealthSummaryCard = ({ employee }: HealthSummaryCardProps) => {
 
 export default function AttendanceSummaryScreen() {
     const { session, client } = useAuth();
+    const router = useRouter();
 
     const { data: employee, isLoading: isEmpLoading, refetch: refetchEmp, isRefetching: isEmpRefetching } = useMyEmployee(client, session?.uid);
     const checkInOut = useCheckInOut(client, session?.uid);
@@ -517,7 +518,7 @@ export default function AttendanceSummaryScreen() {
                                 <Text className="text-xs text-slate-400 italic">
                                     Detailed stats via Timesheets module
                                 </Text>
-                                <TouchableOpacity>
+                                <TouchableOpacity onPress={() => router.push('/attendance/history')}>
                                     <Text className="text-primary-600 text-sm font-bold">View History →</Text>
                                 </TouchableOpacity>
                             </View>

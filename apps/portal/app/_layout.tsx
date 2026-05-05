@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
-import { OdooProvider, ModuleRegistry, useAuth, mapOdooError, toast, type ToastMessage } from '@odoo-portal/core';
+import { OdooProvider, ModuleRegistry, useAuth, toast, type ToastMessage } from '@odoo-portal/core';
 import { attendanceModule, payslipModule, settingsModule } from '../src/modules';
-import { platformSessionStorage } from '~/lib/storage';
 import { appConfig } from '~/lib/app-config';
 import { ErrorBoundary } from '~/src/components/ErrorBoundary';
 import { Platform } from 'react-native';
@@ -12,7 +11,7 @@ import { createOdooClient } from '~/lib/create-client';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { MATERIAL_COMMUNITY_FONT_FAMILY, MATERIAL_COMMUNITY_FONT_DATA_URI } from '~/lib/material-community-font';
 
 import '../global.css';
@@ -188,10 +187,7 @@ export default function RootLayout() {
     return (
         <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-            <OdooProvider
-                clientOptions={{ sessionStorage: platformSessionStorage }}
-                clientFactory={createOdooClient}
-            >
+            <OdooProvider clientFactory={createOdooClient}>
                 <SessionRestorer />
                 <StatusBar style="auto" />
                 <Stack screenOptions={{ headerShown: false }}>

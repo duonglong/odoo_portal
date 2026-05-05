@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,53 +8,19 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '@odoo-portal/core';
+import { useLoginForm } from '../hooks';
 
 export default function LoginScreen() {
-    const { login, isLoading, session, isSessionChecked, error } = useAuth();
-
-    // ── Inverse Auth Guard ──────────────────────────────────────────────
-    // If the user is already logged in, redirect them to the app.
-    useEffect(() => {
-        if (isSessionChecked && session) {
-            router.replace('/(app)');
-        }
-    }, [isSessionChecked, session]);
-    // ────────────────────────────────────────────────────────────────────
-
-    const [loginEmail, setLoginEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [localError, setLocalError] = useState<string | null>(null);
-
-    const handleLogin = async () => {
-        setLocalError(null);
-
-        if (!loginEmail.trim() || !password.trim()) {
-            setLocalError('Please enter your email and password/API key');
-            return;
-        }
-
-        const envUrl = process.env.EXPO_PUBLIC_ODOO_URL;
-        const envDb = process.env.EXPO_PUBLIC_ODOO_DATABASE;
-
-        if (!envUrl || !envDb) {
-            setLocalError('Odoo URL or Database is not configured.');
-            return;
-        }
-
-        try {
-            await login(
-                { url: envUrl.trim().replace(/\/$/, ''), database: envDb.trim() },
-                { login: loginEmail.trim(), password: password.trim() },
-            );
-            router.replace('/(app)');
-        } catch {
-            // error is captured in useAuth state and displayed inline
-        }
-    };
+    const {
+        loginEmail, setLoginEmail,
+        password, setPassword,
+        showPassword, setShowPassword,
+        localError,
+        handleLogin,
+        isLoading,
+        error,
+    } = useLoginForm();
 
     return (
         <KeyboardAvoidingView
@@ -141,8 +106,7 @@ export default function LoginScreen() {
 
                     {/* Action Button */}
                     <TouchableOpacity
-                        className={`rounded-xl py-4 items-center mt-10 shadow-lg shadow-odoo-primary/30 border-b-[4px] border-black/10 ${isLoading ? 'bg-odoo-primary/70' : 'bg-odoo-primary'
-                            }`}
+                        className={`rounded-xl py-4 items-center mt-10 shadow-lg shadow-odoo-primary/30 border-b-[4px] border-black/10 ${isLoading ? 'bg-odoo-primary/70' : 'bg-odoo-primary'}`}
                         onPress={handleLogin}
                         disabled={isLoading}
                     >
@@ -153,7 +117,6 @@ export default function LoginScreen() {
                         )}
                     </TouchableOpacity>
 
-                    
                 </View>
 
                 {/* Footer */}
