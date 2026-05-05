@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { ModuleRegistration } from '@odoo-portal/types';
+import type { ModuleRegistration } from '@odoo-portal/core';
 import { ModuleRegistry } from './module-registry.js';
 
 /**
@@ -15,9 +15,4 @@ export const useModules = (userGroupIds: string[] = []): ModuleRegistration[] =>
     );
 };
 
-/**
- * Hook to get all registered modules (regardless of access).
- */
-export const useAllModules = (): ModuleRegistration[] => {
-    return useMemo(() => ModuleRegistry.getAll(), []);
-};
+

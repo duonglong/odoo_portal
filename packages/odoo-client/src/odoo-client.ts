@@ -2,20 +2,13 @@ import type {
     OdooConnectionConfig,
     AuthCredentials,
     OdooSession,
-    OdooDomain,
-    SearchOptions,
-    AuthenticateResult,
-} from '@odoo-portal/types';
+} from './types/connection.js';
+import type { OdooDomain, SearchOptions } from './types/domain.js';
 
-
-import { JsonRpcTransport } from './json-rpc-transport.js';
-import type { ProxyTransport } from './proxy-transport.js';
+import { ApiTransport } from './api-transport.js';
 import type { SessionStorage } from './session-storage.js';
 import { InMemorySessionStorage } from './session-storage.js';
 import { AuthenticationError, SessionExpiredError } from './errors.js';
-
-/** Union type for the two transport implementations */
-export type OdooTransport = JsonRpcTransport | ProxyTransport;
 
 export interface OdooClientOptions {
     /** Session storage implementation (defaults to in-memory) */
@@ -23,10 +16,9 @@ export interface OdooClientOptions {
     /** Storage key prefix for multi-instance support */
     storageKey?: string;
     /**
-     * Custom transport. Defaults to JsonRpcTransport (direct Odoo calls).
-     * Pass a ProxyTransport when running on web to route calls through the BFF proxy.
+     * Custom transport. Defaults to ApiTransport pointing to config.url if not provided.
      */
-    transport?: OdooTransport;
+    transport?: ApiTransport;
 }
 
 /**
@@ -38,8 +30,10 @@ export interface OdooClientOptions {
  *   const orders = await client.searchRead('sale.order', [], ['name', 'amount_total']);
  */
 export class OdooClient {
-    private transport: OdooTransport;
+    private transport: ApiTransport;
     private session: OdooSession | null = null;
+    private _restorePromise: Promise<OdooSession | null> | null = null;
+    private onSessionExpiredHandler?: () => void;
     private sessionStorage: SessionStorage;
     private storageKey: string;
     private config: OdooConnectionConfig;
@@ -49,9 +43,14 @@ export class OdooClient {
         options: OdooClientOptions = {},
     ) {
         this.config = config;
-        this.transport = options.transport ?? new JsonRpcTransport(config.url);
+        this.transport = options.transport ?? new ApiTransport(config.url);
         this.sessionStorage = options.sessionStorage ?? new InMemorySessionStorage();
         this.storageKey = options.storageKey ?? `odoo_session_${config.url}_${config.database}`;
+    }
+
+    /** Register a callback invoked when any API call gets a 401 (BFF session expired). */
+    setOnSessionExpired(handler: () => void): void {
+        this.onSessionExpiredHandler = handler;
     }
 
     // ──────────────────────────────────────────
@@ -63,13 +62,8 @@ export class OdooClient {
      * Supports both password and API key (Odoo 19).
      */
     async authenticate(credentials: AuthCredentials): Promise<OdooSession> {
-        // ProxyTransport has its own login() that calls the BFF proxy.
-        // We detect it by checking for the login() method.
-        if ('login' in this.transport && typeof (this.transport as { login?: unknown }).login === 'function') {
-            const { ProxyTransport } = await import('./proxy-transport.js');
-            const proxy = this.transport as InstanceType<typeof ProxyTransport>;
-            // Token is returned alongside session from the proxy
-            const { session: proxySession, token } = await proxy.login({
+        try {
+            const { session: proxySession, token } = await this.transport.login({
                 url: this.config.url,
                 database: this.config.database,
                 login: credentials.login,
@@ -90,79 +84,55 @@ export class OdooClient {
             };
             await this.sessionStorage.save(this.storageKey, this.session);
             return this.session;
+        } catch (err) {
+            if (err instanceof AuthenticationError) throw err;
+            throw new AuthenticationError(err instanceof Error ? err.message : 'Authentication failed');
         }
-
-        // Direct transport — call Odoo authenticate endpoint
-        const result = await this.transport.call<AuthenticateResult>(
-            '/web/session/authenticate',
-            {
-                db: this.config.database,
-                login: credentials.login,
-                password: credentials.password,
-            },
-        );
-
-        if (!result.uid) {
-            throw new AuthenticationError();
-        }
-
-        this.session = {
-            sessionId: result.session_id,
-            uid: result.uid,
-            username: result.username,
-            name: result.name,
-            partnerId: result.partner_id,
-            companyId: result.company_id,
-            userContext: result.user_context,
-            serverVersion: result.server_version,
-            isAuthenticated: true,
-        };
-
-        this.transport.setSessionId(this.session.sessionId);
-        await this.sessionStorage.save(this.storageKey, this.session);
-
-        return this.session;
     }
 
     /**
      * Restore a previously saved session.
-     * Returns null if no session is stored or if the session is invalid.
+     * Checks JWT expiry locally — no BFF round-trip on restore.
+     * The first real API call validates against the BFF; a 401 triggers onSessionExpired.
+     *
+     * Concurrent calls (e.g. React StrictMode double-invoke) share a single
+     * in-flight promise so they can't race to call clearSession() on each other.
      */
     async restoreSession(): Promise<OdooSession | null> {
-        const saved = await this.sessionStorage.load(this.storageKey);
-        if (!saved) return null;
-
-        this.session = saved;
-
-        // If we are using ProxyTransport, wire up the JWT.
-        // Otherwise, wire up the Odoo sessionId.
-        if ('setJwt' in this.transport && typeof (this.transport as any).setJwt === 'function') {
-            if (!this.session.proxyJwt) {
-                // If we don't have a JWT saved, we can't make proxy calls
-                await this.clearSession();
-                return null;
-            }
-            (this.transport as any).setJwt(this.session.proxyJwt);
-        } else {
-            this.transport.setSessionId(saved.sessionId);
+        if (this._restorePromise) {
+            return this._restorePromise;
         }
+        this._restorePromise = this._doRestoreSession().finally(() => {
+            this._restorePromise = null;
+        });
+        return this._restorePromise;
+    }
 
-        // Validate the session is still alive
-        try {
-            const info = await this.transport.call<AuthenticateResult>(
-                '/web/session/get_session_info',
-                {},
-            );
-
-            if (!info.uid) {
-                await this.clearSession();
-                return null;
-            }
-
-            return this.session;
-        } catch {
+    private async _doRestoreSession(): Promise<OdooSession | null> {
+        const saved = await this.sessionStorage.load(this.storageKey);
+        if (!saved?.proxyJwt) {
             await this.clearSession();
             return null;
+        }
+
+        // Validate expiry locally — avoids a network call on every page refresh.
+        // If expired, clear and force re-login.
+        if (this._isJwtExpired(saved.proxyJwt!)) {
+            await this.clearSession();
+            return null;
+        }
+
+        this.session = saved;
+        this.transport.setJwt(saved.proxyJwt);
+        return this.session;
+    }
+
+    private _isJwtExpired(token: string): boolean {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return typeof payload.exp === 'number' && payload.exp * 1000 < Date.now();
+        } catch {
+            return true; // unparseable → treat as expired
         }
     }
 
@@ -170,9 +140,9 @@ export class OdooClient {
     async logout(): Promise<void> {
         if (this.session) {
             try {
-                await this.transport.call('/web/session/destroy', {});
+                await this.transport.logout();
             } catch {
-                // Ignore errors during logout — session might already be expired
+                // Ignore errors during logout
             }
         }
         await this.clearSession();
@@ -191,6 +161,11 @@ export class OdooClient {
     /** Get the connection config */
     getConfig(): OdooConnectionConfig {
         return this.config;
+    }
+
+    /** Get the BFF proxy base URL (the URL ApiTransport was initialised with) */
+    getProxyUrl(): string {
+        return this.transport.getBaseUrl();
     }
 
     // ──────────────────────────────────────────
@@ -227,8 +202,7 @@ export class OdooClient {
     // ──────────────────────────────────────────
 
     /**
-     * Call any method on any Odoo model via call_kw.
-     * This is the escape hatch for ORM methods.
+     * Call any method on any Odoo model via stateless execute_kw.
      */
     async callKw<T = unknown>(
         model: string,
@@ -238,30 +212,20 @@ export class OdooClient {
     ): Promise<T> {
         this.assertAuthenticated();
 
-        return this.transport.call<T>('/web/dataset/call_kw', {
-            model,
-            method,
-            args,
-            kwargs: {
+        try {
+            return await this.transport.call<T>(model, method, args, {
                 ...kwargs,
                 context: kwargs['context'] ?? this.session!.userContext,
-            },
-        });
-    }
-
-    /**
-     * Call any Odoo HTTP controller route directly via JSON-RPC.
-     * Use this for controller endpoints that are NOT ORM methods (e.g. /hr_attendance/manual_selection).
-     *
-     * Example:
-     *   await client.callRoute('/hr_attendance/manual_selection', { token, employee_id: 1 });
-     */
-    async callRoute<T = unknown>(
-        endpoint: string,
-        params: Record<string, unknown> = {},
-    ): Promise<T> {
-        this.assertAuthenticated();
-        return this.transport.call<T>(endpoint, params);
+            });
+        } catch (err) {
+            if (err instanceof SessionExpiredError) {
+                // BFF returned 401 — clear in-memory session and notify React
+                this.session = null;
+                this.transport.setJwt(null);
+                this.onSessionExpiredHandler?.();
+            }
+            throw err;
+        }
     }
 
     // ──────────────────────────────────────────
@@ -276,7 +240,7 @@ export class OdooClient {
 
     private async clearSession(): Promise<void> {
         this.session = null;
-        this.transport.setSessionId(null);
+        this.transport.setJwt(null);
         await this.sessionStorage.clear(this.storageKey);
     }
 }

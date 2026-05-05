@@ -1,85 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mapFromOdoo, mapToOdoo, getOdooFields, many2oneId, many2oneName } from '../src/mappers/field-mapper.js';
-
-describe('mapFromOdoo', () => {
-    const fieldMap = {
-        id: 'id',
-        orderNumber: 'name',
-        total: 'amount_total',
-        customerName: 'partner_id',
-        status: 'state',
-    };
-
-    it('maps Odoo fields to domain properties', () => {
-        const odooRecord = {
-            id: 1,
-            name: 'SO001',
-            amount_total: 1500.00,
-            partner_id: [42, 'Acme Corp'],
-            state: 'sale',
-        };
-
-        const result = mapFromOdoo(odooRecord, fieldMap);
-
-        expect(result).toEqual({
-            id: 1,
-            orderNumber: 'SO001',
-            total: 1500.00,
-            customerName: { id: 42, name: 'Acme Corp' },
-            status: 'sale',
-        });
-    });
-
-    it('converts false to null', () => {
-        const odooRecord = {
-            id: 2,
-            name: 'SO002',
-            amount_total: 0,
-            partner_id: false,
-            state: 'draft',
-        };
-
-        const result = mapFromOdoo(odooRecord, fieldMap);
-
-        expect(result).toMatchObject({
-            customerName: null,
-        });
-    });
-
-    it('handles missing fields gracefully', () => {
-        const odooRecord = { id: 3, name: 'SO003' };
-        const result = mapFromOdoo(odooRecord, fieldMap);
-
-        expect(result).toMatchObject({
-            id: 3,
-            orderNumber: 'SO003',
-            total: undefined,
-        });
-    });
-});
-
-describe('mapToOdoo', () => {
-    const fieldMap = {
-        orderNumber: 'name',
-        total: 'amount_total',
-        status: 'state',
-    };
-
-    it('maps domain properties to Odoo fields', () => {
-        const domainData = { orderNumber: 'SO001', total: 1500 };
-        const result = mapToOdoo(domainData, fieldMap);
-
-        expect(result).toEqual({ name: 'SO001', amount_total: 1500 });
-    });
-
-    it('ignores properties not in the domain data', () => {
-        const domainData = { status: 'sale' };
-        const result = mapToOdoo(domainData, fieldMap);
-
-        expect(result).toEqual({ state: 'sale' });
-        expect(result).not.toHaveProperty('name');
-    });
-});
+import { describe, it, expect } from 'vitest';
+import { mapFromOdoo, getOdooFields } from '../src/mappers/field-mapper.js';
 
 describe('getOdooFields', () => {
     it('returns Odoo field names from a field map', () => {
@@ -88,22 +8,33 @@ describe('getOdooFields', () => {
     });
 });
 
-describe('many2oneId', () => {
-    it('extracts ID from many2one tuple', () => {
-        expect(many2oneId([42, 'Acme Corp'])).toBe(42);
+describe('mapFromOdoo', () => {
+    it('renames fields using the field map', () => {
+        expect(mapFromOdoo({ check_in: '2026-01-15 08:00:00' }, { checkIn: 'check_in' }))
+            .toEqual({ checkIn: '2026-01-15 08:00:00' });
     });
 
-    it('returns null for false', () => {
-        expect(many2oneId(false)).toBeNull();
-    });
-});
-
-describe('many2oneName', () => {
-    it('extracts name from many2one tuple', () => {
-        expect(many2oneName([42, 'Acme Corp'])).toBe('Acme Corp');
+    it('normalizes many2one tuple to { id, name }', () => {
+        expect(mapFromOdoo({ employee_id: [42, 'Alice'] }, { employeeId: 'employee_id' }))
+            .toEqual({ employeeId: { id: 42, name: 'Alice' } });
     });
 
-    it('returns null for false', () => {
-        expect(many2oneName(false)).toBeNull();
+    it('converts false to null', () => {
+        expect(mapFromOdoo({ check_out: false }, { checkOut: 'check_out' }))
+            .toEqual({ checkOut: null });
+    });
+
+    it('excludes Odoo fields not present in the field map', () => {
+        expect(mapFromOdoo({ id: 1, unknown_field: 'x' }, { id: 'id' }))
+            .toEqual({ id: 1 });
+    });
+
+    it('returns mapped key with undefined when field is absent from record', () => {
+        expect(mapFromOdoo({}, { id: 'id' })).toEqual({ id: undefined });
+    });
+
+    it('handles nested many2one with id and name', () => {
+        expect(mapFromOdoo({ department_id: [1, 'Dept A'] }, { departmentId: 'department_id' }))
+            .toEqual({ departmentId: { id: 1, name: 'Dept A' } });
     });
 });

@@ -1,1 +1,3 @@
-export { MyAttendanceScreen as default } from '@odoo-portal/attendance';
+import { MyAttendanceScreen } from '../../../src/modules/attendance';
+
+export default MyAttendanceScreen;

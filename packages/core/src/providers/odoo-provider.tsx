@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
 import { OdooClient, type OdooClientOptions } from '@odoo-portal/odoo-client';
-import type { OdooConnectionConfig, OdooSession } from '@odoo-portal/types';
+import type { OdooConnectionConfig, OdooSession } from '@odoo-portal/odoo-client';
 
 interface OdooContextValue {
     /** Get or create an OdooClient for the given connection */
@@ -29,8 +29,7 @@ interface OdooProviderProps {
     clientOptions?: OdooClientOptions;
     /**
      * Optional factory for creating OdooClient instances.
-     * Use this to inject a platform-aware factory (e.g. one that
-     * uses ProxyTransport on web and direct transport on native).
+     * Use this to inject a custom factory if needed.
      * Defaults to `new OdooClient(config, clientOptions)`.
      */
     clientFactory?: (config: OdooConnectionConfig, options: OdooClientOptions) => OdooClient;
@@ -59,9 +58,15 @@ export const OdooProvider = ({ children, clientOptions = {}, clientFactory }: Od
         const client = clientFactory
             ? clientFactory(config, clientOptions)
             : new OdooClient(config, clientOptions);
+
+        client.setOnSessionExpired(() => {
+            setSession(null);
+            setActiveClient(null);
+        });
+
         clientCache.current.set(key, client);
         return client;
-    }, [clientFactory, clientOptions]);
+    }, [clientFactory, clientOptions, setSession, setActiveClient]);
 
     return (
         <OdooContext.Provider value={{

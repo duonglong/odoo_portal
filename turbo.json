@@ -1,6 +1,10 @@
 {
     "$schema": "https://turbo.build/schema.json",
     "tasks": {
+        "generate-modules": {
+            "inputs": ["src/modules/*/module.ts"],
+            "outputs": ["src/modules/index.ts"]
+        },
         "build": {
             "dependsOn": [
                 "^build"

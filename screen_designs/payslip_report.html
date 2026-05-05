@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Salary Slip - Indigo Orbit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#000000",
+                        "on-surface": "#000000",
+                        "on-surface-variant": "#444444",
+                        "outline-variant": "#e5e7eb",
+                        "surface-container": "#f9fafb"
+                    },
+                    fontFamily: {
+                        "body": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* A4 Page Formatting for PDF Generation */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            body { background: white; p-0 }
+            .a4-container {
+                width: 210mm;
+                height: 297mm;
+                padding: 15mm;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .no-print { display: none; }
+        }
+
+        /* Screen Preview */
+        .a4-container {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* High Contrast & OCR Optimization */
+        .ocr-text { color: #000000 !important; }
+        .ocr-label { 
+            color: #444444 !important; 
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 antialiased py-8">
+<!-- A4 Wrapper -->
+<main class="a4-container flex flex-col">
+<!-- Header Branding -->
+<header class="flex justify-between items-start mb-10 pb-6 border-b-2 border-black">
+<div>
+<h1 class="text-2xl font-extrabold tracking-tight ocr-text">INDIGO ORBIT</h1>
+<p class="text-[10px] font-semibold text-on-surface-variant uppercase tracking-widest">Precision Systems • Official Payroll Document</p>
+</div>
+<div class="text-right">
+<h2 class="text-xl font-bold ocr-text">SALARY SLIP</h2>
+<p class="text-sm font-medium text-on-surface-variant">March 2026</p>
+</div>
+</header>
+<!-- Info Bento Grid -->
+<div class="grid grid-cols-2 gap-12 mb-10">
+<!-- Employee Info -->
+<div class="space-y-4">
+<h3 class="ocr-label border-b border-gray-200 pb-1">Employee Information</h3>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<div class="ocr-label opacity-70">Full Name</div>
+<div class="font-bold ocr-text">worker1</div>
+</div>
+<div>
+<div class="ocr-label opacity-70">Employee ID</div>
+<div class="font-bold ocr-text">#EMP-2026-001</div>
+</div>
+<div>
+<div class="ocr-label opacity-70">Contract Type</div>
+<div class="font-semibold text-sm">Salary-exempt</div>
+</div>
+<div>
+<div class="ocr-label opacity-70">Department</div>
+<div class="font-semibold text-sm text-on-surface-variant">Global Operations</div>
+</div>
+</div>
+</div>
+<!-- Pay Period Info -->
+<div class="space-y-4">
+<h3 class="ocr-label border-b border-gray-200 pb-1">Pay Period Details</h3>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<div class="ocr-label opacity-70">Period Start</div>
+<div class="font-bold ocr-text">03/18/2026</div>
+</div>
+<div>
+<div class="ocr-label opacity-70">Period End</div>
+<div class="font-bold ocr-text">03/31/2026</div>
+</div>
+<div>
+<div class="ocr-label opacity-70">Working Days</div>
+<div class="font-semibold text-sm">10 Days</div>
+</div>
+<div>
+<div class="ocr-label opacity-70">Status</div>
+<div class="text-[10px] font-bold uppercase">PROCESSED</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Tables Section -->
+<div class="flex-grow space-y-8">
+<!-- Earnings -->
+<section>
+<h3 class="text-sm font-bold mb-3 flex items-center gap-2">
+                EARNINGS BREAKDOWN
+                <span class="h-[1px] flex-grow bg-gray-200"></span>
+</h3>
+<table class="w-full text-left text-xs border-collapse">
+<thead>
+<tr class="bg-gray-50 border-y border-black">
+<th class="px-4 py-2 font-bold ocr-label">Description</th>
+<th class="px-4 py-2 text-right font-bold ocr-label">Hours</th>
+<th class="px-4 py-2 text-right font-bold ocr-label">Rate</th>
+<th class="px-4 py-2 text-right font-bold ocr-label">Amount</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-200">
+<tr>
+<td class="px-4 py-3 font-medium">Attendance</td>
+<td class="px-4 py-3 text-right">80.0</td>
+<td class="px-4 py-3 text-right">-</td>
+<td class="px-4 py-3 text-right font-bold">$ 0.00</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="border-t border-black font-bold">
+<td class="px-4 py-3 text-right ocr-label" colspan="3">Total Gross Earnings</td>
+<td class="px-4 py-3 text-right text-sm">$ 0.00</td>
+</tr>
+</tfoot>
+</table>
+</section>
+<!-- Deductions -->
+<section>
+<h3 class="text-sm font-bold mb-3 flex items-center gap-2">
+                STATUTORY DEDUCTIONS
+                <span class="h-[1px] flex-grow bg-gray-200"></span>
+</h3>
+<table class="w-full text-left text-xs border-collapse">
+<thead>
+<tr class="bg-gray-50 border-y border-black">
+<th class="px-4 py-2 font-bold ocr-label">Description</th>
+<th class="px-4 py-2 text-right font-bold ocr-label">Rate %</th>
+<th class="px-4 py-2 text-right font-bold ocr-label">Amount</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-200">
+<tr><td class="px-4 py-2.5">Federal Income Tax</td><td class="px-4 py-2.5 text-right">0.00%</td><td class="px-4 py-2.5 text-right font-bold">$ 0.00</td></tr>
+<tr><td class="px-4 py-2.5">Medicare Tax</td><td class="px-4 py-2.5 text-right">0.00%</td><td class="px-4 py-2.5 text-right font-bold">$ 0.00</td></tr>
+<tr><td class="px-4 py-2.5">Medicare Additional Tax</td><td class="px-4 py-2.5 text-right">0.00%</td><td class="px-4 py-2.5 text-right font-bold">$ 0.00</td></tr>
+<tr><td class="px-4 py-2.5">Social Security Tax</td><td class="px-4 py-2.5 text-right">0.00%</td><td class="px-4 py-2.5 text-right font-bold">$ 0.00</td></tr>
+</tbody>
+<tfoot>
+<tr class="border-t border-black font-bold">
+<td class="px-4 py-3 text-right ocr-label" colspan="2">Total Deductions</td>
+<td class="px-4 py-3 text-right text-sm">$ 0.00</td>
+</tr>
+</tfoot>
+</table>
+</section>
+<!-- Net Salary Summary -->
+<div class="mt-8 bg-black text-white p-6 rounded-none flex justify-between items-center">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mb-1">Total Net Payable</p>
+<p class="text-3xl font-black">ZERO DOLLARS AND ZERO CENTS</p>
+</div>
+<div class="text-right">
+<p class="text-4xl font-black">$ 0.00</p>
+</div>
+</div>
+</div>
+<!-- Signatures & Footer -->
+<div class="mt-auto pt-10">
+<div class="grid grid-cols-2 gap-20 mb-10">
+<div class="space-y-4">
+<div class="h-12 flex items-end justify-center border-b border-black pb-2">
+<span class="text-xs text-gray-400 italic">Electronic Signature Embedded</span>
+</div>
+<p class="ocr-label text-center">Authorized Signatory</p>
+</div>
+<div class="space-y-4">
+<div class="h-12 flex items-end justify-center border-b border-black pb-2">
+<span class="text-xs font-mono text-gray-400">#IO-SIG-9238-A4X</span>
+</div>
+<p class="ocr-label text-center">Digital Signature Hash</p>
+</div>
+</div>
+<footer class="border-t border-gray-200 pt-6 flex justify-between items-center">
+<div class="ocr-label text-[8px] opacity-60">
+                © 2026 Indigo Orbit Precision Systems. This is a computer-generated document and does not require a physical signature.
+            </div>
+<div class="flex gap-4 ocr-label text-[8px]">
+<span>CERTIFIED: YES</span>
+<span>ORIGINAL COPY</span>
+</div>
+</footer>
+</div>
+</main>
+</body></html>

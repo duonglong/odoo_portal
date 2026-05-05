@@ -1,4 +1,4 @@
-import type { OdooSession } from '@odoo-portal/types';
+import type { OdooSession } from './types/connection.js';
 
 /**
  * Abstract session storage interface.

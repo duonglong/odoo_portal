@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import type { SessionStorage } from '@odoo-portal/odoo-client';
-import type { OdooSession } from '@odoo-portal/types';
+import type { OdooSession } from '@odoo-portal/odoo-client';
 
 /**
  * Mobile session storage using expo-secure-store (encrypted keychain/keystore).

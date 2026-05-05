@@ -1,4 +1,4 @@
-import type { ModuleRegistration } from '@odoo-portal/types';
+import type { ModuleRegistration } from '@odoo-portal/core';
 
 /**
  * Registry for portal feature modules.
@@ -11,17 +11,24 @@ class ModuleRegistryImpl {
 
     /** Register a feature module */
     register(registration: ModuleRegistration): void {
-        if (this.modules.has(registration.module.id)) {
-            console.warn(
-                `[ModuleRegistry] Module "${registration.module.id}" is already registered. Overwriting.`,
-            );
-        }
+        if (this.modules.has(registration.module.id)) return;
         this.modules.set(registration.module.id, registration);
     }
 
     /** Get all registered modules */
     getAll(): ModuleRegistration[] {
         return Array.from(this.modules.values());
+    }
+
+    /** Get all unique required groups across all registered modules */
+    getAllRequiredGroups(): string[] {
+        const groups = new Set<string>();
+        for (const reg of this.modules.values()) {
+            if (reg.module.requiredGroups) {
+                reg.module.requiredGroups.forEach((g) => groups.add(g));
+            }
+        }
+        return Array.from(groups);
     }
 
     /**

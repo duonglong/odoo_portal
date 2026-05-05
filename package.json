@@ -8,7 +8,8 @@
         "lint": "turbo run lint",
         "test": "turbo run test",
         "typecheck": "turbo run typecheck",
-        "clean": "turbo run clean"
+        "clean": "turbo run clean",
+        "new-module": "node scripts/scaffold-module.mjs"
     },
     "devDependencies": {
         "turbo": "^2.4.0",
@@ -17,5 +18,19 @@
     "packageManager": "pnpm@9.15.0",
     "engines": {
         "node": ">=22.0.0"
+    },
+    "pnpm": {
+        "overrides": {
+            "tar": "^7.5.8",
+            "undici": "^6.24.0",
+            "@hono/node-server": "^1.19.10",
+            "node-forge": "^1.4.0",
+            "@xmldom/xmldom": "^0.8.13",
+            "picomatch": "^2.3.2",
+            "vite": "^7.3.2"
+        }
+    },
+    "dependencies": {
+        "@react-native-community/datetimepicker": "8.2.0"
     }
 }

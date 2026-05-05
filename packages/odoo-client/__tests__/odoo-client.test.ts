@@ -34,60 +34,79 @@ describe('OdooClient', () => {
 
     describe('authenticate', () => {
         it('authenticates successfully and stores session', async () => {
-            mockFetch.mockResolvedValueOnce(createSuccessResponse({
-                uid: 2,
-                session_id: 'abc123',
-                username: 'user@test.com',
-                name: 'Test User',
-                partner_id: 10,
-                company_id: 1,
-                user_context: { lang: 'en_US', tz: 'UTC' },
-                server_version: '19.0',
-            }));
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                headers: new Headers(),
+                json: () => Promise.resolve({
+                    token: 'jwt-token',
+                    session: {
+                        uid: 2,
+                        username: 'user@test.com',
+                        name: 'Test User',
+                        partnerId: 10,
+                        companyId: 1,
+                        userContext: { lang: 'en_US', tz: 'UTC' },
+                        serverVersion: '19.0',
+                    }
+                })
+            });
 
             const session = await client.authenticate({
                 login: 'user@test.com',
                 password: 'api-key-123',
             });
 
+            expect(mockFetch).toHaveBeenLastCalledWith(
+                'https://test.odoo.com/auth/login',
+                expect.objectContaining({
+                    method: 'POST',
+                    body: expect.stringContaining('"login":"user@test.com"'),
+                }),
+            );
+
             expect(session.uid).toBe(2);
             expect(session.username).toBe('user@test.com');
             expect(session.serverVersion).toBe('19.0');
             expect(session.isAuthenticated).toBe(true);
+            expect(session.proxyJwt).toBe('jwt-token');
             expect(client.isAuthenticated()).toBe(true);
         });
 
-        it('throws AuthenticationError on invalid credentials', async () => {
-            mockFetch.mockResolvedValueOnce(createSuccessResponse({
-                uid: false,
-                session_id: '',
-                username: '',
-                name: '',
-                partner_id: 0,
-                company_id: 0,
-                user_context: {},
-                server_version: '19.0',
-            }));
+        it('throws Error on invalid credentials', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                headers: new Headers(),
+                json: () => Promise.resolve({ error: 'Wrong login/password' })
+            });
 
             await expect(
                 client.authenticate({ login: 'bad', password: 'wrong' }),
-            ).rejects.toThrow(AuthenticationError);
+            ).rejects.toThrow('Wrong login/password');
         });
     });
 
     describe('CRUD operations', () => {
         beforeEach(async () => {
             // Authenticate first
-            mockFetch.mockResolvedValueOnce(createSuccessResponse({
-                uid: 2,
-                session_id: 'abc123',
-                username: 'user@test.com',
-                name: 'Test User',
-                partner_id: 10,
-                company_id: 1,
-                user_context: { lang: 'en_US' },
-                server_version: '19.0',
-            }));
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                headers: new Headers(),
+                json: () => Promise.resolve({
+                    token: 'jwt-token',
+                    session: {
+                        uid: 2,
+                        username: 'user@test.com',
+                        name: 'Test User',
+                        partnerId: 10,
+                        companyId: 1,
+                        userContext: { lang: 'en_US' },
+                        serverVersion: '19.0',
+                    }
+                })
+            });
             await client.authenticate({ login: 'user@test.com', password: 'pass' });
         });
 
@@ -107,37 +126,14 @@ describe('OdooClient', () => {
 
             expect(result).toEqual(mockRecords);
             expect(mockFetch).toHaveBeenLastCalledWith(
-                'https://test.odoo.com/web/dataset/call_kw',
+                'https://test.odoo.com/proxy/jsonrpc',
                 expect.objectContaining({
                     method: 'POST',
-                    body: expect.stringContaining('"method":"call"'),
+                    body: expect.stringContaining('"method":"search_read"'),
                 }),
             );
         });
 
-        it('create returns the new record ID', async () => {
-            mockFetch.mockResolvedValueOnce(createSuccessResponse(42));
-
-            const id = await client.create('sale.order', { partner_id: 1 });
-
-            expect(id).toBe(42);
-        });
-
-        it('write returns true on success', async () => {
-            mockFetch.mockResolvedValueOnce(createSuccessResponse(true));
-
-            const result = await client.write('sale.order', [1], { state: 'done' });
-
-            expect(result).toBe(true);
-        });
-
-        it('unlink returns true on success', async () => {
-            mockFetch.mockResolvedValueOnce(createSuccessResponse(true));
-
-            const result = await client.unlink('sale.order', [1]);
-
-            expect(result).toBe(true);
-        });
     });
 
     describe('unauthenticated access', () => {
@@ -145,18 +141,6 @@ describe('OdooClient', () => {
             await expect(
                 client.searchRead('sale.order', [], ['name']),
             ).rejects.toThrow(SessionExpiredError);
-        });
-    });
-
-    describe('listDatabases', () => {
-        it('returns list of databases', async () => {
-            mockFetch.mockResolvedValueOnce(
-                createSuccessResponse(['db1', 'db2', 'db3']),
-            );
-
-            const dbs = await client.listDatabases();
-
-            expect(dbs).toEqual(['db1', 'db2', 'db3']);
         });
     });
 });

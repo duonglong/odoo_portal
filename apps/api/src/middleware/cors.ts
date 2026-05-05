@@ -1,4 +1,14 @@
 import { createMiddleware } from 'hono/factory';
+import { config } from '../config.js';
+
+// Parse once at module load — PORTAL_ORIGINS never changes at runtime.
+const ALLOWED_ORIGINS: ReadonlySet<string> = new Set(
+    config.PORTAL_ORIGINS
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+);
+const FALLBACK_ORIGIN = [...ALLOWED_ORIGINS][0] ?? '';
 
 /**
  * CORS middleware.
@@ -9,12 +19,9 @@ import { createMiddleware } from 'hono/factory';
  * For preflight OPTIONS requests, responds immediately with 204.
  */
 export const corsMiddleware = createMiddleware(async (c, next) => {
-    const rawOrigins = process.env['PORTAL_ORIGINS'] ?? 'http://localhost:8081';
-    const allowedOrigins = rawOrigins.split(',').map((o) => o.trim());
-
     const requestOrigin = c.req.header('Origin') ?? '';
-    const allowed = allowedOrigins.includes(requestOrigin) || allowedOrigins.includes('*');
-    const responseOrigin = allowed ? requestOrigin : allowedOrigins[0] ?? '';
+    const allowed = ALLOWED_ORIGINS.has(requestOrigin) || ALLOWED_ORIGINS.has('*');
+    const responseOrigin = allowed ? requestOrigin : FALLBACK_ORIGIN;
 
     c.header('Access-Control-Allow-Origin', responseOrigin);
     c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
